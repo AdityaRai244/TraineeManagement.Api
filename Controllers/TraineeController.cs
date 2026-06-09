@@ -1,45 +1,70 @@
 using Microsoft.AspNetCore.Mvc;
+using TraineeManagement.Api.DTOs;
+using TraineeManagement.Api.Services;
 namespace TraineeManagement.Api.Controllers;
 
 [ApiController]
 [Route("/api/trainees")]
 public class TraineeController : ControllerBase
 {
-    private static int Id = 1;
-    private static readonly List<Trainee> trainees = new List<Trainee>();
+
+    private readonly ITraineeService traineeService;
+    public TraineeController(ITraineeService traineeService)
+    {
+        this.traineeService = traineeService;
+    }
+
 
     [HttpGet]
     public ActionResult Get()
     {
-        return Ok(trainees);
+        return Ok(traineeService.GetAllTrainees());
     }
 
     [HttpGet("{id}")]
     public ActionResult GetById(int id)
     {
-        var trainee = trainees.Find(t => t.Id == id);
+
+        var trainee = traineeService.GetTraineeById(id);
         if(trainee == null)
         {
-            return NotFound(new {status = "Could not found the trainee"});
+            return NotFound(new {message = $"Trainee with {id} not found"});
         }
-        else
-        {
-            return Ok(trainee);
-        }
+        return Ok(trainee);
 
     }
     
 
     [HttpPost]
-    public ActionResult Post([FromBody] Trainee newTrainee)
+    public ActionResult Post([FromBody] CreateTraineeRequest request)
     {
-        
-        newTrainee.Id = Id++;
-        newTrainee.CreatedDate = DateTime.Now;
-        newTrainee.UpdatedDate = DateTime.Now;
-        trainees.Add(newTrainee);
 
-        return Ok(new {msg = "Trainee added successfully"});
+        var trainee = traineeService.CreateTrainee(request);
+        return Ok(trainee);
 
     }
+
+    [HttpPut("{id}")]
+    public ActionResult Put(int id, [FromBody] UpdateTraineeRequest request)
+    {
+        var trainee = traineeService.UpdateTrainee(id, request);
+        if(trainee == null)
+        {
+            return NotFound(new {message = $"Trainee with {id} not found"});
+        }
+        return Ok(trainee);
+
+    }
+
+    [HttpDelete("{id}")]
+    public ActionResult Delete(int id)
+    {
+        var success = traineeService.DeleteTrainee(id);
+        if (!success)
+        {
+            return NotFound(new {message = $"Trainee with {id} not found"});
+        }
+        return NoContent();
+    }
+
 }

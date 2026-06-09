@@ -1,5 +1,5 @@
 using TraineeManagement.Api.DTOs;
-
+using TraineeManagement.Api.Models;
 namespace TraineeManagement.Api.Services;
 
 public class TraineeService : ITraineeService
@@ -7,6 +7,12 @@ public class TraineeService : ITraineeService
     
     private static readonly List<Trainee> trainees = new List<Trainee>();
     private static  int traineeId = 1;
+
+    private readonly AppDbContext database;
+    public TraineeService(AppDbContext database){
+        this.database = database;
+    }
+
     public IEnumerable<TraineeResponse> GetAllTrainees()
     {
         return trainees.Select(MapResponse);

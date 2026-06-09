@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-
+using TraineeManagement.Api.Models;
 namespace TraineeManagement.Api.DTOs;
 
 

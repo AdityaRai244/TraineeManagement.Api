@@ -1,4 +1,4 @@
-namespace TraineeManagement.Api;
+namespace TraineeManagement.Api.Models;
 
 public enum UserStatus
 {

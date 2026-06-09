@@ -9,6 +9,7 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ITraineeService,TraineeService>();
+builder.Services.AddDbContext<AppDbContext>(options => options.useInMemoryDatabase("TraineeManagementDb"));
 
 var app = builder.Build();
 

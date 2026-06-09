@@ -55,8 +55,6 @@ public class TraineeService : ITraineeService
 
     }
 
-   
-
     public bool DeleteTrainee(int id)
     {
         var trainee = trainees.Find(t => t.Id == id);

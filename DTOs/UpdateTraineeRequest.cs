@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace TraineeManagement.Api.DTOs;
 
@@ -20,7 +21,10 @@ public class UpdateTraineeRequest
     [Required(ErrorMessage = "Tech Stack is Required")]
     public string TechStack {get; set;} = string.Empty;
 
+
     [Required(ErrorMessage = "Status is Required")]
-    public string Status {get;set;} = string.Empty;
+    [EnumDataType(typeof(UserStatus), ErrorMessage = "Status is Invalid")]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public UserStatus Status {get;set;}
 
 }

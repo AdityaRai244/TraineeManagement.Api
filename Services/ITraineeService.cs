@@ -6,11 +6,12 @@ namespace TraineeManagement.Api.Services;
 public interface ITraineeService
 {
     
-    IEnumerable<TraineeResponse> GetAllTrainees();
-    TraineeResponse? GetTraineeById(int id);
-    TraineeResponse CreateTrainee(CreateTraineeRequest trainee);
-    TraineeResponse? UpdateTrainee(int id, UpdateTraineeRequest trainee);
-    bool DeleteTrainee(int id);
+    Task<IEnumerable<TraineeResponse>> GetAllTrainees(string? search = null);
+    Task<TraineeResponse?> GetTraineeById(int id);
+    Task<TraineeResponse> CreateTrainee(CreateTraineeRequest trainee);
+    Task<TraineeResponse?> UpdateTrainee(int id, UpdateTraineeRequest trainee);
+    Task<bool> DeleteTrainee(int id);
+
 
 
 }

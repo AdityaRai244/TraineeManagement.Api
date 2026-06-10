@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using TraineeManagement.Api.Data;
 using TraineeManagement.Api.DTOs;
 using TraineeManagement.Api.Models;
 namespace TraineeManagement.Api.Services;
@@ -5,31 +7,43 @@ namespace TraineeManagement.Api.Services;
 public class TraineeService : ITraineeService
 {
     
-    private static readonly List<Trainee> trainees = new List<Trainee>();
-    private static  int traineeId = 1;
 
     private readonly AppDbContext database;
     public TraineeService(AppDbContext database){
         this.database = database;
     }
 
-    public IEnumerable<TraineeResponse> GetAllTrainees()
+    public async Task<IEnumerable<TraineeResponse>> GetAllTrainees(string? search = null)
     {
-        return trainees.Select(MapResponse);
+        var query =  database.Trainees.AsQueryable();
+        if(!string.IsNullOrWhiteSpace(search)){
+            search = search.ToLower();
+
+            query = query.Where(t =>
+                t.FirstName.ToLower().Contains(search) ||
+                t.LastName.ToLower().Contains(search) ||
+                t.Email.ToLower().Contains(search) ||
+                t.TechStack.ToLower().Contains(search)
+             );
+        }
+
+             var trainees = await query.ToListAsync();
+            return trainees.Select(MapResponse);
+
     }
 
-    public TraineeResponse? GetTraineeById(int id)
+    public async Task<TraineeResponse?> GetTraineeById(int id)
     {
-        var trainee = trainees.Find(t => t.Id == id);
+
+        var trainee = await database.Trainees.FindAsync(id);
         return trainee == null ? null : MapResponse(trainee); 
     }
 
-    public TraineeResponse CreateTrainee(CreateTraineeRequest request)
+    public async Task<TraineeResponse> CreateTrainee(CreateTraineeRequest request)
     {
         
         var trainee = new Trainee
         {
-            Id = traineeId++,
             FirstName = request.FirstName,
             LastName = request.LastName,
             Email = request.Email,
@@ -40,15 +54,18 @@ public class TraineeService : ITraineeService
 
         };
 
-        trainees.Add(trainee);
+        await database.Trainees.AddAsync(trainee);
+
+        await database.SaveChangesAsync();
         return MapResponse(trainee);
 
     }
 
-    public TraineeResponse? UpdateTrainee(int id, UpdateTraineeRequest request)
+    public async Task<TraineeResponse?> UpdateTrainee(int id, UpdateTraineeRequest request)
     {
 
-        var trainee = trainees.Find(t => t.Id == id);
+        var trainee = await database.Trainees.FindAsync(id);
+
         if(trainee == null) return null;
         trainee.FirstName = request.FirstName;
         trainee.LastName = request.LastName;
@@ -57,18 +74,20 @@ public class TraineeService : ITraineeService
         trainee.TechStack = request.TechStack;
         trainee.UpdatedDate = DateTime.Now;
 
+        await database.SaveChangesAsync();
+
         return MapResponse(trainee);
 
     }
 
-    public bool DeleteTrainee(int id)
+    public async Task<bool> DeleteTrainee(int id)
     {
-        var trainee = trainees.Find(t => t.Id == id);
+        var trainee = await database.Trainees.FindAsync(id);
         if(trainee == null) return false;
-        trainees.Remove(trainee);
+        database.Trainees.Remove(trainee);
+        await database.SaveChangesAsync();
         return true;
     }
-
      public TraineeResponse MapResponse(Trainee newTrainee)
     {
         
@@ -85,5 +104,6 @@ public class TraineeService : ITraineeService
 
 
     }
+
 
 }

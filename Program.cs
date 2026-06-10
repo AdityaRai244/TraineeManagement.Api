@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using TraineeManagement.Api.Data;
 using TraineeManagement.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,7 +11,7 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ITraineeService,TraineeService>();
-builder.Services.AddDbContext<AppDbContext>(options => options.useInMemoryDatabase("TraineeManagementDb"));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase("TraineeManagementDb"));
 
 var app = builder.Build();
 

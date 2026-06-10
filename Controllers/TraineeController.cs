@@ -16,16 +16,17 @@ public class TraineeController : ControllerBase
 
 
     [HttpGet]
-    public ActionResult Get()
+    public async Task<ActionResult> Get([FromQuery] string? search)
     {
-        return Ok(traineeService.GetAllTrainees());
+        return Ok(await traineeService.GetAllTrainees(search));
     }
 
+
     [HttpGet("{id}")]
-    public ActionResult GetById(int id)
+    public async Task<ActionResult> GetById(int id)
     {
 
-        var trainee = traineeService.GetTraineeById(id);
+        var trainee = await traineeService.GetTraineeById(id);
         if(trainee == null)
         {
             return NotFound(new {message = $"Trainee with {id} not found"});
@@ -36,18 +37,18 @@ public class TraineeController : ControllerBase
     
 
     [HttpPost]
-    public ActionResult Post([FromBody] CreateTraineeRequest request)
+    public async Task<ActionResult> Post([FromBody] CreateTraineeRequest request)
     {
 
-        var trainee = traineeService.CreateTrainee(request);
-        return Ok(trainee);
+        var trainee = await traineeService.CreateTrainee(request);
+        return CreatedAtAction(nameof(GetById), new {id =trainee.Id}, trainee);
 
     }
 
     [HttpPut("{id}")]
-    public ActionResult Put(int id, [FromBody] UpdateTraineeRequest request)
+    public async Task<ActionResult> Put(int id, [FromBody] UpdateTraineeRequest request)
     {
-        var trainee = traineeService.UpdateTrainee(id, request);
+        var trainee = await traineeService.UpdateTrainee(id, request);
         if(trainee == null)
         {
             return NotFound(new {message = $"Trainee with {id} not found"});
@@ -57,14 +58,15 @@ public class TraineeController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public ActionResult Delete(int id)
+    public async Task<ActionResult> Delete(int id)
     {
-        var success = traineeService.DeleteTrainee(id);
+        var success = await traineeService.DeleteTrainee(id);
         if (!success)
         {
             return NotFound(new {message = $"Trainee with {id} not found"});
         }
         return NoContent();
     }
+
 
 }

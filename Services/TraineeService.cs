@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using TraineeManagement.Api.Data;
 using TraineeManagement.Api.DTOs;
@@ -6,17 +7,23 @@ namespace TraineeManagement.Api.Services;
 
 public class TraineeService : ITraineeService
 {
-    
+
 
     private readonly AppDbContext database;
-    public TraineeService(AppDbContext database){
+    private readonly ILogger<AuthService> _logger;
+
+    public TraineeService(AppDbContext database, ILogger<AuthService> logger)
+    {
         this.database = database;
+        _logger = logger;
     }
 
-    public async Task<IEnumerable<TraineeResponse>> GetAllTrainees(string? search = null)
+    public async Task<IEnumerable<TraineeResponse>> GetAllTrainees(UserStatus? status, string? search = null, int pageNumber = 1, int pageSize = 10)
     {
-        var query =  database.Trainees.AsQueryable();
-        if(!string.IsNullOrWhiteSpace(search)){
+        var query = database.Trainees.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
             search = search.ToLower();
 
             query = query.Where(t =>
@@ -25,10 +32,21 @@ public class TraineeService : ITraineeService
                 t.Email.ToLower().Contains(search) ||
                 t.TechStack.ToLower().Contains(search)
              );
+
+             _logger.LogInformation("Implemented Search Filtering");
         }
 
-             var trainees = await query.ToListAsync();
-            return trainees.Select(MapResponse);
+        if (!string.IsNullOrWhiteSpace(status.ToString()))
+        {
+            query = query.Where(t => string.Equals(t.Status.ToString(),status.ToString()));
+             _logger.LogInformation("Implemented Status Filtering");
+        }
+
+        var trainees = await query.AsNoTracking().Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
+             _logger.LogInformation("Implemented Pagination");
+
+        // var trainees = await query.ToListAsync();
+        return trainees.Select(MapResponse);
 
     }
 
@@ -36,12 +54,13 @@ public class TraineeService : ITraineeService
     {
 
         var trainee = await database.Trainees.FindAsync(id);
-        return trainee == null ? null : MapResponse(trainee); 
+        _logger.LogInformation("Get Trainee By Id Request Successful for Id No : {id}",id);
+        return trainee == null ? null : MapResponse(trainee);
     }
 
     public async Task<TraineeResponse> CreateTrainee(CreateTraineeRequest request)
     {
-        
+
         var trainee = new Trainee
         {
             FirstName = request.FirstName,
@@ -57,6 +76,7 @@ public class TraineeService : ITraineeService
         await database.Trainees.AddAsync(trainee);
 
         await database.SaveChangesAsync();
+        _logger.LogInformation("Trainee Created Succesfully");
         return MapResponse(trainee);
 
     }
@@ -66,7 +86,7 @@ public class TraineeService : ITraineeService
 
         var trainee = await database.Trainees.FindAsync(id);
 
-        if(trainee == null) return null;
+        if (trainee == null) return null;
         trainee.FirstName = request.FirstName;
         trainee.LastName = request.LastName;
         trainee.Email = request.Email;
@@ -75,6 +95,7 @@ public class TraineeService : ITraineeService
         trainee.UpdatedDate = DateTime.Now;
 
         await database.SaveChangesAsync();
+        _logger.LogInformation("Update Trainee Request Successful for Id No : {id}",id);
 
         return MapResponse(trainee);
 
@@ -83,15 +104,18 @@ public class TraineeService : ITraineeService
     public async Task<bool> DeleteTrainee(int id)
     {
         var trainee = await database.Trainees.FindAsync(id);
-        if(trainee == null) return false;
+        if (trainee == null) return false;
         database.Trainees.Remove(trainee);
         await database.SaveChangesAsync();
+        _logger.LogInformation("Delete Trainee Successful for Id No : {id}",id);
         return true;
     }
-     public TraineeResponse MapResponse(Trainee newTrainee)
+    public TraineeResponse MapResponse(Trainee newTrainee)
     {
-        
-        return new TraineeResponse {
+
+        _logger.LogInformation("Mapping Response to DTO");
+        return new TraineeResponse
+        {
             Id = newTrainee.Id,
             FirstName = newTrainee.FirstName,
             LastName = newTrainee.LastName,

@@ -5,7 +5,11 @@ using TraineeManagement.Api.Models;
 using TraineeManagement.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
+using Microsoft.OpenApi;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Components.Infrastructure;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,8 +18,35 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddSwaggerGen();
+// ---------AUTHENTICATION IN SWAGGER-----------
+
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo 
+    { 
+        Title = "TraineeManagement.Api",
+        Version = "v1"
+    });
+
+    // Define security scheme
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
+    {
+        Type = SecuritySchemeType.ApiKey,
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        Description = "Enter your JWT token status below."
+
+    });
+
+    // Apply security to endpoints
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+});
+
 builder.Services.AddScoped<ITraineeService,TraineeService>();
 builder.Services.AddScoped<IAuthService,AuthService>();
 
@@ -26,8 +57,24 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 
 
+// ---------CORS-------------------
+
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+                      policy  =>
+                      {
+                          policy.WithOrigins("http://localhost:3000",
+                                              "http://localhost:5173")
+                                              .AllowAnyHeader()
+                                              .AllowAnyMethod();
+                      });
+});
 
 
+//----------------- JWT ----------------
 
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                       .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
@@ -56,6 +103,9 @@ builder.Services.AddAuthentication(options =>
 
 
 
+
+
+// -----------SEED USER ----------
 // using(var scope = app.Services.CreateAsyncScope())
 // {
 //    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -89,7 +139,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseCors(MyAllowSpecificOrigins);
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

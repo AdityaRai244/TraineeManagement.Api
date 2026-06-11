@@ -15,11 +15,13 @@ public class AuthService : IAuthService
 {
     private readonly AppDbContext database;
     private readonly IConfiguration _config;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(AppDbContext database, IConfiguration config)
+    public AuthService(AppDbContext database, IConfiguration config,  ILogger<AuthService> logger)
     {
         this.database = database;
         this._config = config;
+        _logger = logger;
     }
 
     public async Task<LoginResponse?> LoginUser([FromBody] LoginRequest request)
@@ -31,15 +33,20 @@ public class AuthService : IAuthService
 
         if (user == null)
         {
+            _logger.LogError("User does not exists");
             return null;
         }
 
         PasswordHelper passHelper = new PasswordHelper();
         bool isPasswordValid = passHelper.VerifyPassword(user, user.PasswordHash, password);
-        if (!isPasswordValid) return null;
-
+        if (!isPasswordValid)
+        {
+            _logger.LogError("Invalid Password");
+            return null;  
+        } 
         string tokenString = GenerateJWT(user);
-        Console.WriteLine(tokenString);
+
+        _logger.LogInformation("Login Request successful");
 
         return new LoginResponse
         {
@@ -56,7 +63,7 @@ public class AuthService : IAuthService
 
     private string GenerateJWT(User user)
     {
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:SecretKey"]));
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:SecretKey"]!));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
         
         var userClaims = new[]
@@ -73,6 +80,7 @@ public class AuthService : IAuthService
             expires: DateTime.Now.AddMinutes(60),
             signingCredentials: credentials
         );
+        _logger.LogInformation("JWT Generated Successfully");
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

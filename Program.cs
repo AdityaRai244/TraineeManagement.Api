@@ -10,12 +10,18 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Components.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.OpenApi;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(
+        new JsonStringEnumConverter()
+    );
+});;
 
 
 // ---------AUTHENTICATION IN SWAGGER-----------
@@ -49,6 +55,7 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddScoped<ITraineeService,TraineeService>();
 builder.Services.AddScoped<IAuthService,AuthService>();
+builder.Services.AddScoped<IMentorService,MentorService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>

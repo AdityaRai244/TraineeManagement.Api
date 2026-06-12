@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
 using TraineeManagement.Api.DTOs;
 using TraineeManagement.Api.Models;
 

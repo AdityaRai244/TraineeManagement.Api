@@ -56,6 +56,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddScoped<ITraineeService,TraineeService>();
 builder.Services.AddScoped<IAuthService,AuthService>();
 builder.Services.AddScoped<IMentorService,MentorService>();
+builder.Services.AddScoped<ILearningTaskService,LearningTaskService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -82,10 +83,6 @@ builder.Services.AddCors(options =>
 
 
 //----------------- JWT ----------------
-
-builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                      .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
-                      .AddEnvironmentVariables();
 
 
 builder.Services.AddAuthentication(options =>

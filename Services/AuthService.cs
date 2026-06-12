@@ -24,7 +24,7 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    public async Task<LoginResponse?> LoginUser([FromBody] LoginRequest request)
+    public async Task<LoginResponse?> LoginUser(LoginRequest request)
     {
         string username = request.Username;
         string password = request.Password;

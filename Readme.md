@@ -4,6 +4,10 @@ Trainee Management API
 ## Technology Used
 Asp.net core
 
+
+## Prerequisites
+Create an appsettings.json file in root of your directory. Copy the appsettings.example.json file into the newly created appsettings.json file. Replace the variable values with the actual values. For eg : {SERVER_NAME} --> localhost, {MYSQL_USERNAME} --> root. etc.
+
 ## DB SETUP
 
  

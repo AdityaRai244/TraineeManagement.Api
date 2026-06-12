@@ -12,8 +12,8 @@ using TraineeManagement.Api.Data;
 namespace TraineeManagement.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260611112936_LearningTask")]
-    partial class LearningTask
+    [Migration("20260612092717_initial")]
+    partial class initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -100,6 +100,46 @@ namespace TraineeManagement.Api.Migrations
                     b.ToTable("Mentors");
                 });
 
+            modelBuilder.Entity("TraineeManagement.Api.Models.TaskAssignment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AssignedDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("LearningTaskId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MentorId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TraineeId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LearningTaskId");
+
+                    b.HasIndex("MentorId");
+
+                    b.HasIndex("TraineeId");
+
+                    b.ToTable("TaskAssignment");
+                });
+
             modelBuilder.Entity("TraineeManagement.Api.Models.Trainee", b =>
                 {
                     b.Property<int>("Id")
@@ -173,6 +213,48 @@ namespace TraineeManagement.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("TraineeManagement.Api.Models.TaskAssignment", b =>
+                {
+                    b.HasOne("TraineeManagement.Api.Models.LearningTask", "LearningTask")
+                        .WithMany("TaskAssignments")
+                        .HasForeignKey("LearningTaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TraineeManagement.Api.Models.Mentor", "Mentor")
+                        .WithMany("TaskAssignments")
+                        .HasForeignKey("MentorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TraineeManagement.Api.Models.Trainee", "Trainee")
+                        .WithMany("TaskAssignments")
+                        .HasForeignKey("TraineeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LearningTask");
+
+                    b.Navigation("Mentor");
+
+                    b.Navigation("Trainee");
+                });
+
+            modelBuilder.Entity("TraineeManagement.Api.Models.LearningTask", b =>
+                {
+                    b.Navigation("TaskAssignments");
+                });
+
+            modelBuilder.Entity("TraineeManagement.Api.Models.Mentor", b =>
+                {
+                    b.Navigation("TaskAssignments");
+                });
+
+            modelBuilder.Entity("TraineeManagement.Api.Models.Trainee", b =>
+                {
+                    b.Navigation("TaskAssignments");
                 });
 #pragma warning restore 612, 618
         }

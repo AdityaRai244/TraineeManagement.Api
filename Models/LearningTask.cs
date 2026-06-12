@@ -21,4 +21,7 @@ public class LearningTask
     public DateTime CreatedDate {get; set;}
     public DateTime UpdatedDate {get; set;}
 
+    public ICollection<TaskAssignment> TaskAssignments { get; set; } = new List<TaskAssignment>();
+
+
 }

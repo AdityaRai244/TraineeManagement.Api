@@ -57,6 +57,7 @@ builder.Services.AddScoped<ITraineeService,TraineeService>();
 builder.Services.AddScoped<IAuthService,AuthService>();
 builder.Services.AddScoped<IMentorService,MentorService>();
 builder.Services.AddScoped<ILearningTaskService,LearningTaskService>();
+builder.Services.AddScoped<ITaskAssignmentService,TaskAssignmentService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -109,28 +110,6 @@ builder.Services.AddAuthentication(options =>
 
 
 
-// -----------SEED USER ----------
-// using(var scope = app.Services.CreateAsyncScope())
-// {
-//    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
- 
-//    if (!db.Users.Any())
-//    {
-//       var admin = new User
-//       {
-//          Username = "Aditya",
-//          Email = "aditya@gmail.com",
-//          PasswordHash = "",
-//          Role = UserRole.Admin
-//       };
-    //   var hasher = new PasswordHasher<User>();
-//       string hashedPassword = hasher.HashPassword(admin, "pass");
-//       admin.PasswordHash = hashedPassword;
-//       Console.WriteLine("Seeding user: " + admin);
-//       db.Users.Add(admin);
-//       db.SaveChanges();
-//    }
-// }
 
 // Configure the HTTP request pipeline.
 
@@ -140,6 +119,30 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+// -----------SEED USER ----------
+
+using(var scope = app.Services.CreateAsyncScope())
+{
+   var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+ 
+   if (!db.Users.Any())
+   {
+      var admin = new User
+      {
+         Username = "admin",
+         Email = "aditya@gmail.com",
+         PasswordHash = "",
+         Role = UserRole.Admin
+      };
+      var hasher = new PasswordHasher<User>();
+      string hashedPassword = hasher.HashPassword(admin, "admin");
+      admin.PasswordHash = hashedPassword;
+      Console.WriteLine("Seeding user: " + admin);
+      db.Users.Add(admin);
+      db.SaveChanges();
+   }
 }
 
 app.UseHttpsRedirection();

@@ -14,6 +14,10 @@ Create an appsettings.json file in root of your directory. Copy the appsettings.
 ## How to Run
 run `dotnet run` in the root of the project directory
 
+# Login Credentials for testing
+Username : admin
+Password : admin
+
 # MySQL Setup Commands (WSL/Ubuntu)
  
 ## 1. Update Ubuntu Packages
@@ -367,3 +371,4 @@ Sample PUT /api/trainees/{id} response:
 ## Known Limitations
 - Using In-memory database instead of Sql or NoSql database
  
+

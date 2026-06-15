@@ -256,6 +256,7 @@ __EFMigrationsHistory
 ```
  
 # API List
+```
 GET    /api/health 
 POST   /api/auth/login 
 GET    /api/trainees?pageNumber=1&pageSize=10&search=amit&status=Active 
@@ -283,10 +284,11 @@ GET    /api/submissions/{id}
 POST   /api/reviews 
 GET    /api/reviews 
 GET    /api/reviews/{id} 
-
+```
 
  
 ## Sample Request JSON
+```json
 Sample POST and PUT /api/trainees request:
 {
   "firstName": "john",
@@ -302,9 +304,11 @@ Sample POST and PUT /api/trainees request:
   "techStack": "JavaScript, Typescript",
   "status": "Inactive"
 }
+```
  
  
 ## Sample Response JSON
+```json
 Sample GET /api/health response:
 {
   "status": "running",
@@ -638,7 +642,7 @@ Sample GET    /api/reviews/{id} resposne :
   "reviewStatus": "Accepted",
   "reviewedDate": "2026-06-15T07:12:25.369Z"
 }
-
+```
 
 ## Known Limitations
 - Using In-memory database instead of Sql or NoSql database

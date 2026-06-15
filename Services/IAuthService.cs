@@ -6,7 +6,7 @@ namespace TraineeManagement.Api.Services;
 public interface IAuthService
 {
     
-    Task<LoginResponse?> LoginUser(LoginRequest request);
+    Task<LoginResponseDTO?> LoginUser(LoginRequestDTO request);
 
 
 }

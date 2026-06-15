@@ -18,7 +18,7 @@ public class TraineeService : ITraineeService
         _logger = logger;
     }
 
-    public async Task<IEnumerable<TraineeResponse>> GetAllTrainees(UserStatus? status, string? search = null, int pageNumber = 1, int pageSize = 10)
+    public async Task<IEnumerable<TraineeResponseDTO>> GetAllTrainees(UserStatus? status, string? search = null, int pageNumber = 1, int pageSize = 10)
     {
         var query = database.Trainees.AsQueryable();
 
@@ -50,7 +50,7 @@ public class TraineeService : ITraineeService
 
     }
 
-    public async Task<TraineeResponse?> GetTraineeById(int id)
+    public async Task<TraineeResponseDTO?> GetTraineeById(int id)
     {
 
         var trainee = await database.Trainees.FindAsync(id);
@@ -58,7 +58,7 @@ public class TraineeService : ITraineeService
         return trainee == null ? null : MapResponse(trainee);
     }
 
-    public async Task<TraineeResponse> CreateTrainee(CreateTraineeRequest request)
+    public async Task<TraineeResponseDTO> CreateTrainee(CreateTraineeRequestDTO request)
     {
 
         var trainee = new Trainee
@@ -81,7 +81,7 @@ public class TraineeService : ITraineeService
 
     }
 
-    public async Task<TraineeResponse?> UpdateTrainee(int id, UpdateTraineeRequest request)
+    public async Task<TraineeResponseDTO?> UpdateTrainee(int id, UpdateTraineeRequestDTO request)
     {
 
         var trainee = await database.Trainees.FindAsync(id);
@@ -110,11 +110,11 @@ public class TraineeService : ITraineeService
         _logger.LogInformation("Delete Trainee Successful for Id No : {id}",id);
         return true;
     }
-    public TraineeResponse MapResponse(Trainee newTrainee)
+    public TraineeResponseDTO MapResponse(Trainee newTrainee)
     {
 
         _logger.LogInformation("Mapping Response to DTO");
-        return new TraineeResponse
+        return new TraineeResponseDTO
         {
             Id = newTrainee.Id,
             FirstName = newTrainee.FirstName,

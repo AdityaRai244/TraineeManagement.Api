@@ -62,7 +62,7 @@ public class TraineeController : ControllerBase
 
     [HttpPost]
     [Authorize]
-    public async Task<ActionResult> Post([FromBody] CreateTraineeRequest request)
+    public async Task<ActionResult> Post([FromBody] CreateTraineeRequestDTO request)
     {
 
         var trainee = await traineeService.CreateTrainee(request);
@@ -73,7 +73,7 @@ public class TraineeController : ControllerBase
 
     [HttpPut("{id}")]
     [Authorize]
-    public async Task<ActionResult> Put(int id, [FromBody] UpdateTraineeRequest request)
+    public async Task<ActionResult> Put(int id, [FromBody] UpdateTraineeRequestDTO request)
     {
         var trainee = await traineeService.UpdateTrainee(id, request);
         if(trainee == null)

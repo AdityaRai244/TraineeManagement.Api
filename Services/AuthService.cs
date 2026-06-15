@@ -24,7 +24,7 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    public async Task<LoginResponse?> LoginUser(LoginRequest request)
+    public async Task<LoginResponseDTO?> LoginUser(LoginRequestDTO request)
     {
         string username = request.Username;
         string password = request.Password;
@@ -48,7 +48,7 @@ public class AuthService : IAuthService
 
         _logger.LogInformation("Login Request successful");
 
-        return new LoginResponse
+        return new LoginResponseDTO
         {
             Token = tokenString, 
             ExpiresIn = 3600,

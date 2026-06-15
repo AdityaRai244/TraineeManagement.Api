@@ -7,10 +7,10 @@ namespace TraineeManagement.Api.Services;
 public interface ITraineeService
 {
     
-    Task<IEnumerable<TraineeResponse>> GetAllTrainees(UserStatus? status, string? search = null,int pageNumber = 1, int pageSize = 10);
-    Task<TraineeResponse?> GetTraineeById(int id);
-    Task<TraineeResponse> CreateTrainee(CreateTraineeRequest trainee);
-    Task<TraineeResponse?> UpdateTrainee(int id, UpdateTraineeRequest trainee);
+    Task<IEnumerable<TraineeResponseDTO>> GetAllTrainees(UserStatus? status, string? search = null,int pageNumber = 1, int pageSize = 10);
+    Task<TraineeResponseDTO?> GetTraineeById(int id);
+    Task<TraineeResponseDTO> CreateTrainee(CreateTraineeRequestDTO trainee);
+    Task<TraineeResponseDTO?> UpdateTrainee(int id, UpdateTraineeRequestDTO trainee);
     Task<bool> DeleteTrainee(int id);
 
 

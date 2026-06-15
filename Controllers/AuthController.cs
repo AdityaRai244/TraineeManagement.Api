@@ -20,7 +20,7 @@ public class LoginController : ControllerBase
     }
     
     [HttpPost]
-    public async Task<ActionResult<LoginResponse>> Login(LoginRequest request)
+    public async Task<ActionResult<LoginResponseDTO>> Login(LoginRequestDTO request)
     {
         
         var response = await authService.LoginUser(request);

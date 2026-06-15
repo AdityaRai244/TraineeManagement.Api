@@ -10,9 +10,9 @@ public class TaskAssignmentService : ITaskAssignmentService
     
 
     private readonly AppDbContext database;
-    private readonly ILogger<AuthService> _logger;
+    private readonly ILogger<ReviewService> _logger;
 
-    public TaskAssignmentService(AppDbContext database, ILogger<AuthService> logger)
+    public TaskAssignmentService(AppDbContext database, ILogger<ReviewService> logger)
     {
         this.database = database;
         _logger = logger;
@@ -78,14 +78,7 @@ public class TaskAssignmentService : ITaskAssignmentService
         var TaskAssignment = await database.TaskAssignment.FindAsync(id);
 
         if (TaskAssignment == null) return null;
-        TaskAssignment.TraineeId = request.TraineeId;
-        TaskAssignment.MentorId = request.MentorId;
-        TaskAssignment.LearningTaskId = request.LearningTaskId;
-        TaskAssignment.AssignedDate = request.AssignedDate;
-        TaskAssignment.DueDate = request.DueDate;
         TaskAssignment.Status = request.Status;
-        TaskAssignment.Remarks = request.Remarks;
-
 
         await database.SaveChangesAsync();
         _logger.LogInformation("Update Task Assignment Request Successful for Id No : {id}",id);

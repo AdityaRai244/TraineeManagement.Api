@@ -28,4 +28,8 @@ public class TaskAssignment
     public Mentor Mentor { get; set; } = null!;
     public LearningTask LearningTask { get; set; } = null!;
 
+    public ICollection<Submission> Submissions { get; set; } = new List<Submission>();
+
+
+
 }

@@ -52,6 +52,7 @@ public class MentorService : IMentorService
 
     public async Task<MentorResponseDTO?> GetMentorById(int id)
     {
+        // var mentor = await database.Mentors.Include(m => m.TaskAssignments).Include(m => m.Reviews).FirstOrDefaultAsync(c => c.Id == id);
 
         var mentor = await database.Mentors.FindAsync(id);
         _logger.LogInformation("Get Mentor By Id Request Successful for Id No : {id}",id);

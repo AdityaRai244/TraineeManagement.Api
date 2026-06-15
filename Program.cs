@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Components.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.OpenApi;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,6 +59,9 @@ builder.Services.AddScoped<IAuthService,AuthService>();
 builder.Services.AddScoped<IMentorService,MentorService>();
 builder.Services.AddScoped<ILearningTaskService,LearningTaskService>();
 builder.Services.AddScoped<ITaskAssignmentService,TaskAssignmentService>();
+builder.Services.AddScoped<ISubmissionService,SubmissionService>();
+builder.Services.AddScoped<IReviewService,ReviewService>();
+
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -119,31 +123,51 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    app.UseExceptionHandler(options =>
+    {
+        options.Run(async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            context.Response.ContentType = "application/json";
+
+
+            var exceptionHandlerPathFeature =
+                context.Features.Get<IExceptionHandlerPathFeature>();
+
+            if(exceptionHandlerPathFeature is not null)
+            {
+                var error = new {message = "An unexpected error occured"};
+                await context.Response.WriteAsJsonAsync(error);
+            }
+        });
+    });
+
 }
 
 // -----------SEED USER ----------
 
-using(var scope = app.Services.CreateAsyncScope())
-{
-   var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+// using(var scope = app.Services.CreateAsyncScope())
+// {
+//    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
  
-   if (!db.Users.Any())
-   {
-      var admin = new User
-      {
-         Username = "admin",
-         Email = "aditya@gmail.com",
-         PasswordHash = "",
-         Role = UserRole.Admin
-      };
-      var hasher = new PasswordHasher<User>();
-      string hashedPassword = hasher.HashPassword(admin, "admin");
-      admin.PasswordHash = hashedPassword;
-      Console.WriteLine("Seeding user: " + admin);
-      db.Users.Add(admin);
-      db.SaveChanges();
-   }
-}
+//    if (!db.Users.Any())
+//    {
+//       var admin = new User
+//       {
+//          Username = "admin",
+//          Email = "aditya@gmail.com",
+//          PasswordHash = "",
+//          Role = UserRole.Admin
+//       };
+//       var hasher = new PasswordHasher<User>();
+//       string hashedPassword = hasher.HashPassword(admin, "admin");
+//       admin.PasswordHash = hashedPassword;
+//       Console.WriteLine("Seeding user: " + admin);
+//       db.Users.Add(admin);
+//       db.SaveChanges();
+//    }
+// }
 
 app.UseHttpsRedirection();
 app.UseCors(MyAllowSpecificOrigins);

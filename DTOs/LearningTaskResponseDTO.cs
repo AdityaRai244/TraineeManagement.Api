@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
-
-namespace TraineeManagement.Api.Models;
+using TraineeManagement.Api.Models;
+namespace TraineeManagement.Api.DTOs;
 
 
 

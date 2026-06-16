@@ -17,7 +17,7 @@ public class HealthController : ControllerBase
     public ActionResult<IEnumerable> HealthCheck()
     {
         _logger.LogInformation("Reached Health API Successfully");
-        return Ok(new {status = "running", application = "Trainee Management API", timestamp = DateTime.Now });
+        return Ok(new {status = "running", application = "Trainee Management API", timestamp = DateTime.UtcNow });
     }
 
 }

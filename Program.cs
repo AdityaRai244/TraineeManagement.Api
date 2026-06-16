@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.OpenApi;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Diagnostics;
+using TraineeManagement.Api.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,6 +71,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 
 
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+
 // ---------CORS-------------------
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
@@ -124,24 +129,24 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    app.UseExceptionHandler(options =>
-    {
-        options.Run(async context =>
-        {
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            context.Response.ContentType = "application/json";
+    // app.UseExceptionHandler(options =>
+    // {
+    //     options.Run(async context =>
+    //     {
+    //         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+    //         context.Response.ContentType = "application/json";
 
 
-            var exceptionHandlerPathFeature =
-                context.Features.Get<IExceptionHandlerPathFeature>();
+    //         var exceptionHandlerPathFeature =
+    //             context.Features.Get<IExceptionHandlerPathFeature>();
 
-            if(exceptionHandlerPathFeature is not null)
-            {
-                var error = new {message = "An unexpected error occured"};
-                await context.Response.WriteAsJsonAsync(error);
-            }
-        });
-    });
+    //         if(exceptionHandlerPathFeature is not null)
+    //         {
+    //             var error = new {message = "An unexpected error occured"};
+    //             await context.Response.WriteAsJsonAsync(error);
+    //         }
+    //     });
+    // });
 
 }
 
@@ -168,7 +173,8 @@ if (app.Environment.IsDevelopment())
 //       db.SaveChanges();
 //    }
 // }
-
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 app.UseHttpsRedirection();
 app.UseCors(MyAllowSpecificOrigins);
 app.UseAuthentication();

@@ -12,9 +12,7 @@ public class CreateSubmissionDTO
     public int TaskAssignmentId {get; set;}
 
     [Required(ErrorMessage = "Submission URL is Required")]
-    [EnumDataType(typeof(SubmissionOptions), ErrorMessage = "Submission URL is Invalid")]
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public SubmissionOptions SubmissionUrl {get; set;}
+    public string SubmissionUrl {get; set;} = string.Empty;
 
     
     [Required(ErrorMessage = "Notes is Required")]

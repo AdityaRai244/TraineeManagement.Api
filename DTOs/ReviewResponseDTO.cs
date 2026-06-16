@@ -1,4 +1,6 @@
-namespace TraineeManagement.Api.Models;
+using TraineeManagement.Api.Models;
+
+namespace TraineeManagement.Api.DTOs;
 
 public class ReviewResponseDTO
 {

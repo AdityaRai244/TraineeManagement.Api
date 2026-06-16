@@ -21,6 +21,6 @@ public class Review
 
     public ReviewStatus ReviewStatus { get; set; }
     public DateTime ReviewedDate { get; set; }
-    public ICollection<Submission> Submissions { get; set; } = new List<Submission>();
+    public Submission Submissions { get; set; } = new Submission();
 
 }

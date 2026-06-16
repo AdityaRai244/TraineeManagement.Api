@@ -3,11 +3,12 @@ using TraineeManagement.Api.DTOs;
 using TraineeManagement.Api.Models;
 using TraineeManagement.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using TraineeManagement.Api.Exceptions;
 
 public class MentorService : IMentorService
 {
-    
-    
+
+
 
     private readonly AppDbContext database;
     private readonly ILogger<AuthService> _logger;
@@ -33,17 +34,29 @@ public class MentorService : IMentorService
                 t.Expertise.ToLower().Contains(search)
              );
 
-             _logger.LogInformation("Implemented Search Filtering");
+            _logger.LogInformation("Implemented Search Filtering");
         }
 
-        if (!string.IsNullOrWhiteSpace(status.ToString()))
+
+
+        // if (!string.IsNullOrWhiteSpace(status.ToString()))
+        // {
+        //     if (Enum.TryParse<MentorStatus>(status, out MentorStatus parsedStatus))
+        //     {
+                // query = query.Where(t => t.Status == parsedStatus);
+                // _logger.LogInformation("Implemented Status Filtering");
+
+        //     }
+        // }
+
+        if (status.HasValue)
         {
-            query = query.Where(t => string.Equals(t.Status.ToString(),status.ToString()));
-             _logger.LogInformation("Implemented Status Filtering");
+            query = query.Where(t => t.Status == status.Value);
+                _logger.LogInformation("Implemented Status Filtering");
         }
 
         var mentors = await query.AsNoTracking().Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
-             _logger.LogInformation("Implemented Pagination");
+        _logger.LogInformation("Implemented Pagination");
 
         // var mentors = await query.ToListAsync();
         return mentors.Select(MapResponse);
@@ -55,7 +68,11 @@ public class MentorService : IMentorService
         // var mentor = await database.Mentors.Include(m => m.TaskAssignments).Include(m => m.Reviews).FirstOrDefaultAsync(c => c.Id == id);
 
         var mentor = await database.Mentors.FindAsync(id);
-        _logger.LogInformation("Get Mentor By Id Request Successful for Id No : {id}",id);
+        if (mentor == null)
+        {
+            throw new NotFoundException("Mentor");
+        }
+        _logger.LogInformation("Get Mentor By Id Request Successful for Id No : {id}", id);
         return mentor == null ? null : MapResponse(mentor);
     }
 
@@ -69,8 +86,8 @@ public class MentorService : IMentorService
             Email = request.Email,
             Status = request.Status,
             Expertise = request.Expertise,
-            CreatedDate = DateTime.Now,
-            UpdatedDate = DateTime.Now
+            CreatedDate = DateTime.UtcNow,
+            UpdatedDate = DateTime.UtcNow
 
         };
 
@@ -87,16 +104,19 @@ public class MentorService : IMentorService
 
         var mentor = await database.Mentors.FindAsync(id);
 
-        if (mentor == null) return null;
+        if (mentor == null)
+        {
+            throw new NotFoundException("Mentor");
+        }
         mentor.FirstName = request.FirstName;
         mentor.LastName = request.LastName;
         mentor.Email = request.Email;
         mentor.Status = request.Status;
         mentor.Expertise = request.Expertise;
-        mentor.UpdatedDate = DateTime.Now;
+        mentor.UpdatedDate = DateTime.UtcNow;
 
         await database.SaveChangesAsync();
-        _logger.LogInformation("Update Mentor Request Successful for Id No : {id}",id);
+        _logger.LogInformation("Update Mentor Request Successful for Id No : {id}", id);
 
         return MapResponse(mentor);
 
@@ -105,10 +125,14 @@ public class MentorService : IMentorService
     public async Task<bool> DeleteMentor(int id)
     {
         var mentor = await database.Mentors.FindAsync(id);
-        if (mentor == null) return false;
+        if (mentor == null)
+        {
+            throw new NotFoundException("Mentor");
+        }
+        ;
         database.Mentors.Remove(mentor);
         await database.SaveChangesAsync();
-        _logger.LogInformation("Delete Mentor Successful for Id No : {id}",id);
+        _logger.LogInformation("Delete Mentor Successful for Id No : {id}", id);
         return true;
     }
     public MentorResponseDTO MapResponse(Mentor newMentor)

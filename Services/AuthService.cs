@@ -56,7 +56,7 @@ public class AuthService : IAuthService
             {
                 Id = user.Id.ToString(),
                 Username = user.Username,
-                Role = UserRole.Trainee
+                Role = user.Role
             }
         };
     }
@@ -77,7 +77,7 @@ public class AuthService : IAuthService
             issuer: _config["Jwt:Issuer"],
             audience: _config["Jwt:Audience"],
             claims: userClaims,
-            expires: DateTime.Now.AddMinutes(60),
+            expires: DateTime.UtcNow.AddMinutes(60),
             signingCredentials: credentials
         );
         _logger.LogInformation("JWT Generated Successfully");

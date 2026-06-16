@@ -3,11 +3,12 @@ using TraineeManagement.Api.DTOs;
 using TraineeManagement.Api.Models;
 using TraineeManagement.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using TraineeManagement.Api.Exceptions;
 
 public class TaskAssignmentService : ITaskAssignmentService
 {
-    
-    
+
+
 
     private readonly AppDbContext database;
     private readonly ILogger<ReviewService> _logger;
@@ -22,14 +23,15 @@ public class TaskAssignmentService : ITaskAssignmentService
     {
         var query = database.TaskAssignment.AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(status.ToString()))
+        if (status.HasValue)
         {
-            query = query.Where(t => string.Equals(t.Status.ToString(),status.ToString()));
-             _logger.LogInformation("Implemented Status Filtering");
+            query = query.Where(t => t.Status == status.Value);
+            _logger.LogInformation("Implemented Status Filtering");
         }
 
+
         var TaskAssignment = await query.AsNoTracking().Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
-             _logger.LogInformation("Implemented Pagination");
+        _logger.LogInformation("Implemented Pagination");
 
         // var mentors = await query.ToListAsync();
         return TaskAssignment.Select(MapResponse);
@@ -40,16 +42,41 @@ public class TaskAssignmentService : ITaskAssignmentService
     {
 
         var TaskAssignment = await database.TaskAssignment.FindAsync(id);
-        _logger.LogInformation("Get Task Assignment By Id Request Successful for Id No : {id}",id);
-        return TaskAssignment == null ? null : MapResponse(TaskAssignment);
+        if (TaskAssignment == null)
+        {
+            throw new NotFoundException("TaskAssignment");
+        }
+        _logger.LogInformation("Get Task Assignment By Id Request Successful for Id No : {id}", id);
+        return MapResponse(TaskAssignment);
     }
 
     public async Task<TaskAssignmentResponseDTO> CreateTaskAssignment(CreateTaskAssignmentDTO request)
     {
 
+        var traineeExists = await database.Trainees.FirstOrDefaultAsync(t => t.Id == request.TraineeId);
+        if (traineeExists == null)
+        {
+            throw new NotFoundException("Trainee");
+        }
+
+        var mentorExists = await database.Mentors.FirstOrDefaultAsync(t => t.Id == request.MentorId);
+        if (mentorExists == null)
+        {
+            throw new NotFoundException("Mentor");
+        }
+
+
+        var learningTasks = await database.LearningTasks.FirstOrDefaultAsync(t => t.Id == request.LearningTaskId);
+        if (learningTasks == null)
+        {
+            throw new NotFoundException("Learning Task");
+        }
+
+
+
         if (request.DueDate < request.AssignedDate)
         {
-            throw new ArgumentException("The due date cannot be earlier than the assigned date.");
+            throw new BadRequestException("The due date cannot be earlier than the assigned date.");
         }
 
         var TaskAssignment = new TaskAssignment
@@ -77,11 +104,14 @@ public class TaskAssignmentService : ITaskAssignmentService
 
         var TaskAssignment = await database.TaskAssignment.FindAsync(id);
 
-        if (TaskAssignment == null) return null;
+        if (TaskAssignment == null)
+        {
+            throw new NotFoundException("TaskAssignment");
+        }
         TaskAssignment.Status = request.Status;
 
         await database.SaveChangesAsync();
-        _logger.LogInformation("Update Task Assignment Request Successful for Id No : {id}",id);
+        _logger.LogInformation("Update Task Assignment Request Successful for Id No : {id}", id);
 
         return MapResponse(TaskAssignment);
 

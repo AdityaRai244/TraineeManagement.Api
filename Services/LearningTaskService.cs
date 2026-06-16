@@ -3,6 +3,7 @@ using TraineeManagement.Api.DTOs;
 using TraineeManagement.Api.Models;
 using TraineeManagement.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using TraineeManagement.Api.Exceptions;
 
 public class LearningTaskService : ILearningTaskService
 {
@@ -21,6 +22,10 @@ public class LearningTaskService : ILearningTaskService
     public async Task<IEnumerable<LearningTaskResponseDTO>> GetAllTasks(LearningTaskStatus? status, string? search = null, int pageNumber = 1, int pageSize = 10)
     {
         var query = database.LearningTasks.AsQueryable();
+        // Console.Write("Start");
+        // Console.Write(status);
+        // Console.Write(status.Value);
+        // Console.Write("End");
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -35,11 +40,12 @@ public class LearningTaskService : ILearningTaskService
             _logger.LogInformation("Implemented Search Filtering");
         }
 
-        if (!string.IsNullOrWhiteSpace(status.ToString()))
+        if (status.HasValue)
         {
-            query = query.Where(t => string.Equals(t.Status.ToString(), status.ToString()));
+            query = query.Where(t => t.Status == status.Value);
             _logger.LogInformation("Implemented Status Filtering");
         }
+
 
         var mentors = await query.AsNoTracking().Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
         _logger.LogInformation("Implemented Pagination");
@@ -53,6 +59,10 @@ public class LearningTaskService : ILearningTaskService
     {
 
         var task = await database.LearningTasks.FindAsync(id);
+        if (task == null)
+        {
+            throw new NotFoundException("Task");
+        }
         _logger.LogInformation("Get Task By Id Request Successful for Id No : {id}", id);
         return task == null ? null : MapResponse(task);
     }
@@ -67,8 +77,8 @@ public class LearningTaskService : ILearningTaskService
             ExpectedTechStack = request.ExpectedTechStack,
             Status = request.Status,
             DueDate = request.DueDate,
-            CreatedDate = DateTime.Now,
-            UpdatedDate = DateTime.Now
+            CreatedDate = DateTime.UtcNow,
+            UpdatedDate = DateTime.UtcNow
 
         };
 
@@ -85,13 +95,16 @@ public class LearningTaskService : ILearningTaskService
 
         var task = await database.LearningTasks.FindAsync(id);
 
-        if (task == null) return null;
-            task.Title = request.Title;
-            task.Description = request.Description;
-            task.ExpectedTechStack = request.ExpectedTechStack;
-            task.Status = request.Status;
-            task.DueDate = request.DueDate;
-            task.UpdatedDate = DateTime.Now;
+        if (task == null)
+        {
+            throw new NotFoundException("Task");
+        }
+        task.Title = request.Title;
+        task.Description = request.Description;
+        task.ExpectedTechStack = request.ExpectedTechStack;
+        task.Status = request.Status;
+        task.DueDate = request.DueDate;
+        task.UpdatedDate = DateTime.UtcNow;
 
         await database.SaveChangesAsync();
         _logger.LogInformation("Update task Request Successful for Id No : {id}", id);
@@ -103,7 +116,10 @@ public class LearningTaskService : ILearningTaskService
     public async Task<bool> DeleteTask(int id)
     {
         var task = await database.LearningTasks.FindAsync(id);
-        if (task == null) return false;
+        if (task == null)
+        {
+            throw new NotFoundException("Task");
+        }
         database.LearningTasks.Remove(task);
         await database.SaveChangesAsync();
         _logger.LogInformation("Delete Task Successful for Id No : {id}", id);

@@ -3,6 +3,7 @@ using TraineeManagement.Api.DTOs;
 using TraineeManagement.Api.Models;
 using TraineeManagement.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using TraineeManagement.Api.Exceptions;
 
 public class ReviewService : IReviewService
 {
@@ -16,18 +17,19 @@ public class ReviewService : IReviewService
         _logger = logger;
     }
 
-    public async Task<IEnumerable<ReviewResponseDTO>> GetAllReviews(ReviewStatus? status,  int pageNumber = 1, int pageSize = 10)
+    public async Task<IEnumerable<ReviewResponseDTO>> GetAllReviews(ReviewStatus? status, int pageNumber = 1, int pageSize = 10)
     {
         var query = database.Reviews.AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(status.ToString()))
+        if (status.HasValue)
         {
-            query = query.Where(t => string.Equals(t.ReviewStatus.ToString(),status.ToString()));
-             _logger.LogInformation("Implemented Status Filtering");
+            query = query.Where(t => t.ReviewStatus == status.Value);
+            _logger.LogInformation("Implemented Status Filtering");
         }
 
+
         var Reviews = await query.AsNoTracking().Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
-             _logger.LogInformation("Implemented Pagination");
+        _logger.LogInformation("Implemented Pagination");
 
         return Reviews.Select(MapResponse);
 
@@ -37,13 +39,29 @@ public class ReviewService : IReviewService
     {
 
         var Review = await database.Reviews.FindAsync(id);
-        _logger.LogInformation("Get Review By Id Request Successful for Id No : {id}",id);
-        return Review == null ? null : MapResponse(Review);
+        if (Review == null)
+        {
+            throw new NotFoundException("Review");
+        }
+        _logger.LogInformation("Get Review By Id Request Successful for Id No : {id}", id);
+        return MapResponse(Review);
     }
 
     public async Task<ReviewResponseDTO> CreateReview(CreateReviewDTO request)
     {
 
+
+        var submissionExists = await database.Submission.FirstOrDefaultAsync(t => t.Id == request.SubmissionId);
+        if (submissionExists == null)
+        {
+            throw new NotFoundException("Submission");
+        }
+
+        var mentorExists = await database.Mentors.FirstOrDefaultAsync(t => t.Id == request.MentorId);
+        if (mentorExists == null)
+        {
+            throw new NotFoundException("Mentor");
+        }
 
         var review = new Review
         {

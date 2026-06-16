@@ -3,6 +3,7 @@ using TraineeManagement.Api.DTOs;
 using TraineeManagement.Api.Models;
 using TraineeManagement.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using TraineeManagement.Api.Exceptions;
 
 public class SubmissionService : ISubmissionService
 {
@@ -20,11 +21,12 @@ public class SubmissionService : ISubmissionService
     {
         var query = database.Submission.AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(status.ToString()))
+        if (status.HasValue)
         {
-            query = query.Where(t => string.Equals(t.Status.ToString(),status.ToString()));
-             _logger.LogInformation("Implemented Status Filtering");
+            query = query.Where(t => t.Status == status.Value);
+                _logger.LogInformation("Implemented Status Filtering");
         }
+
 
         var Submission = await query.AsNoTracking().Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
              _logger.LogInformation("Implemented Pagination");
@@ -37,13 +39,22 @@ public class SubmissionService : ISubmissionService
     {
 
         var Submission = await database.Submission.FindAsync(id);
+        if(Submission == null)
+        {
+            throw new NotFoundException("Submission");
+        }
         _logger.LogInformation("Get Submission By Id Request Successful for Id No : {id}",id);
-        return Submission == null ? null : MapResponse(Submission);
+        return MapResponse(Submission);
     }
 
     public async Task<SubmissionResponseDTO> CreateSubmission(CreateSubmissionDTO request)
     {
 
+        var taskAssignmentExists = await database.TaskAssignment.FirstOrDefaultAsync(t => t.Id == request.TaskAssignmentId);
+        if (taskAssignmentExists == null)
+        {
+            throw new NotFoundException("TaskAssignment");
+        }
 
         var submission = new Submission
         {

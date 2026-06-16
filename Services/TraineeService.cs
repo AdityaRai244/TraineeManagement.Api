@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using TraineeManagement.Api.Data;
 using TraineeManagement.Api.DTOs;
+using TraineeManagement.Api.Exceptions;
 using TraineeManagement.Api.Models;
 namespace TraineeManagement.Api.Services;
 
@@ -18,7 +19,7 @@ public class TraineeService : ITraineeService
         _logger = logger;
     }
 
-    public async Task<IEnumerable<TraineeResponseDTO>> GetAllTrainees(UserStatus? status, string? search = null, int pageNumber = 1, int pageSize = 10)
+    public async Task<IEnumerable<PagedResponseDTO>> GetAllTrainees(UserStatus? status, string? search = null, int pageNumber = 1, int pageSize = 10)
     {
         var query = database.Trainees.AsQueryable();
 
@@ -33,20 +34,31 @@ public class TraineeService : ITraineeService
                 t.TechStack.ToLower().Contains(search)
              );
 
-             _logger.LogInformation("Implemented Search Filtering");
+            _logger.LogInformation("Implemented Search Filtering");
         }
 
-        if (!string.IsNullOrWhiteSpace(status.ToString()))
+          if (status.HasValue)
         {
-            query = query.Where(t => string.Equals(t.Status.ToString(),status.ToString()));
-             _logger.LogInformation("Implemented Status Filtering");
+            query = query.Where(t => t.Status == status.Value);
+                _logger.LogInformation("Implemented Status Filtering");
         }
 
+
+        int count = await query.CountAsync();
         var trainees = await query.AsNoTracking().Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
-             _logger.LogInformation("Implemented Pagination");
+        _logger.LogInformation("Implemented Pagination");
 
         // var trainees = await query.ToListAsync();
-        return trainees.Select(MapResponse);
+        var response = new PagedResponseDTO{
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalRecords = count,
+            Data = trainees
+        };
+        return new List<PagedResponseDTO> {response};
+        // return new
+        // {
+        //     PageNumber = pageNumber 
 
     }
 
@@ -54,8 +66,12 @@ public class TraineeService : ITraineeService
     {
 
         var trainee = await database.Trainees.FindAsync(id);
-        _logger.LogInformation("Get Trainee By Id Request Successful for Id No : {id}",id);
-        return trainee == null ? null : MapResponse(trainee);
+        if (trainee == null)
+        {
+            throw new NotFoundException("Trainee");
+        }
+        _logger.LogInformation("Get Trainee By Id Request Successful for Id No : {id}", id);
+        return MapResponse(trainee);
     }
 
     public async Task<TraineeResponseDTO> CreateTrainee(CreateTraineeRequestDTO request)
@@ -68,8 +84,8 @@ public class TraineeService : ITraineeService
             Email = request.Email,
             Status = request.Status,
             TechStack = request.TechStack,
-            CreatedDate = DateTime.Now,
-            UpdatedDate = DateTime.Now
+            CreatedDate = DateTime.UtcNow,
+            UpdatedDate = DateTime.UtcNow
 
         };
 
@@ -84,7 +100,12 @@ public class TraineeService : ITraineeService
     public async Task<TraineeResponseDTO?> UpdateTrainee(int id, UpdateTraineeRequestDTO request)
     {
 
+
         var trainee = await database.Trainees.FindAsync(id);
+        if (trainee == null)
+        {
+            throw new NotFoundException("Trainee");
+        }
 
         if (trainee == null) return null;
         trainee.FirstName = request.FirstName;
@@ -92,10 +113,10 @@ public class TraineeService : ITraineeService
         trainee.Email = request.Email;
         trainee.Status = request.Status;
         trainee.TechStack = request.TechStack;
-        trainee.UpdatedDate = DateTime.Now;
+        trainee.UpdatedDate = DateTime.UtcNow;
 
         await database.SaveChangesAsync();
-        _logger.LogInformation("Update Trainee Request Successful for Id No : {id}",id);
+        _logger.LogInformation("Update Trainee Request Successful for Id No : {id}", id);
 
         return MapResponse(trainee);
 
@@ -104,10 +125,13 @@ public class TraineeService : ITraineeService
     public async Task<bool> DeleteTrainee(int id)
     {
         var trainee = await database.Trainees.FindAsync(id);
-        if (trainee == null) return false;
+        if (trainee == null)
+        {
+            throw new NotFoundException("Trainee");
+        }
         database.Trainees.Remove(trainee);
         await database.SaveChangesAsync();
-        _logger.LogInformation("Delete Trainee Successful for Id No : {id}",id);
+        _logger.LogInformation("Delete Trainee Successful for Id No : {id}", id);
         return true;
     }
     public TraineeResponseDTO MapResponse(Trainee newTrainee)

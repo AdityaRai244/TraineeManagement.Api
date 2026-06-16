@@ -36,7 +36,7 @@ public class TraineeController : ControllerBase
         // {
         //     pageNumber = pageNumber,
         //     pageSize = pageSize,
-        //     totalRecords = ,
+        //     totalRecords = await ,
         //     data = trainees;
         // });
         return Ok(trainees);

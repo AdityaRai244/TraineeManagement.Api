@@ -45,7 +45,30 @@ public class AppDbContext : DbContext
                 .WithMany(t => t.Submissions)
                 .HasForeignKey(fk => fk.TaskAssignmentId)
                 .IsRequired();
+
             });
+
+             modelBuilder.Entity<Review>(entity =>
+            {
+                entity.HasOne<Submission>(ta => ta.Submissions)
+                .WithMany(t => t.Reviews)
+                .HasForeignKey(fk => fk.SubmissionId)
+                .IsRequired();
+
+                entity.HasOne<Mentor>()
+                .WithMany(t => t.Reviews)
+                .HasForeignKey(fk => fk.MentorId)
+                .IsRequired();
+
+            });
+
+            
+
+
+
+         
+
+             
                
         }
 

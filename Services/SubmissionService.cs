@@ -9,9 +9,9 @@ public class SubmissionService : ISubmissionService
 {
 
     private readonly AppDbContext database;
-    private readonly ILogger<ReviewService> _logger;
+    private readonly ILogger<SubmissionService> _logger;
 
-    public SubmissionService(AppDbContext database, ILogger<ReviewService> logger)
+    public SubmissionService(AppDbContext database, ILogger<SubmissionService> logger)
     {
         this.database = database;
         _logger = logger;

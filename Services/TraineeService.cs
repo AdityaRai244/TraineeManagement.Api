@@ -19,7 +19,7 @@ public class TraineeService : ITraineeService
         _logger = logger;
     }
 
-    public async Task<IEnumerable<PagedResponseDTO>> GetAllTrainees(UserStatus? status, string? search = null, int pageNumber = 1, int pageSize = 10)
+    public async Task<PagedResponseDTO> GetAllTrainees(UserStatus? status, string? search = null, int pageNumber = 1, int pageSize = 10)
     {
         var query = database.Trainees.AsQueryable();
 
@@ -55,7 +55,7 @@ public class TraineeService : ITraineeService
             TotalRecords = count,
             Data = trainees
         };
-        return new List<PagedResponseDTO> {response};
+        return response;
         // return new
         // {
         //     PageNumber = pageNumber 

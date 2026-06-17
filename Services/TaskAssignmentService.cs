@@ -11,9 +11,9 @@ public class TaskAssignmentService : ITaskAssignmentService
 
 
     private readonly AppDbContext database;
-    private readonly ILogger<ReviewService> _logger;
+    private readonly ILogger<TaskAssignmentService> _logger;
 
-    public TaskAssignmentService(AppDbContext database, ILogger<ReviewService> logger)
+    public TaskAssignmentService(AppDbContext database, ILogger<TaskAssignmentService> logger)
     {
         this.database = database;
         _logger = logger;

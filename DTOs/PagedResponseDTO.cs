@@ -9,6 +9,6 @@ public class PagedResponseDTO
     public int PageNumber {get; set;}
     public int PageSize {get; set;}
     public int TotalRecords {get; set;}
-    public  List<Trainee> Data {get;set;} = new List<Trainee>();
+    public  List<TraineeResponseDTO> Data {get;set;} = new List<TraineeResponseDTO>();
 
 }

@@ -1,23 +1,32 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TraineeManagement.Api.Data;
 using TraineeManagement.Api.DTOs;
+using TraineeManagement.Api.Exceptions;
 using TraineeManagement.Api.Models;
 using TraineeManagement.Api.Services;
 
 namespace TraineeManagement.Api.Controllers;
 
 [ApiController]
-[Route("/api/submissions")]
+[Route("/api")]
 
 public class SubmissionController : ControllerBase
 {
 
     private readonly ISubmissionService submissionService;
-    private readonly ILogger<SubmissionController> _logger;
-    public SubmissionController(ISubmissionService submissionService, ILogger<SubmissionController> logger)
+    private readonly IFileStorageService fileStorageService;
+    private readonly IConfiguration config;
+    private readonly AppDbContext database;
+
+    private readonly ILogger<SubmissionController> logger;
+    public SubmissionController(ISubmissionService submissionService, AppDbContext database, IFileStorageService fileStorageService, ILogger<SubmissionController> logger, IConfiguration config)
     {
         this.submissionService = submissionService;
-        _logger = logger;
+        this.database = database;
+        this.fileStorageService = fileStorageService;
+        this.logger = logger;
+        this.config = config;
 
     }
 
@@ -28,16 +37,16 @@ public class SubmissionController : ControllerBase
 
         if (pageNumber <= 0 || pageSize <= 0)
         {
-            _logger.LogError("Invalid Paramters");
+            logger.LogError("Invalid Paramters");
             return BadRequest($"{nameof(pageNumber)} and {nameof(pageSize)} size must be greater than 0.");
         }
 
         var submissions = await submissionService.GetAllSubmissions(status, pageNumber, pageSize);
-        _logger.LogInformation("Submissions fetched from service successfully");
+        logger.LogInformation("Submissions fetched from service successfully");
         return Ok(submissions);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("submissions/{id}")]
     [Authorize]
     public async Task<ActionResult> GetById(int id)
     {
@@ -45,10 +54,10 @@ public class SubmissionController : ControllerBase
         var submission = await submissionService.GetSubmissionById(id);
         if (submission == null)
         {
-            _logger.LogError("Submission with Id {id} Not found", id);
+            logger.LogError("Submission with Id {id} Not found", id);
             return NotFound(new { message = $"Submission with {id} not found" });
         }
-        _logger.LogInformation("Submission with Id {id} Fetched from service Successfully", id);
+        logger.LogInformation("Submission with Id {id} Fetched from service Successfully", id);
         return Ok(submission);
 
     }
@@ -60,8 +69,55 @@ public class SubmissionController : ControllerBase
     {
 
         var submission = await submissionService.CreateSubmission(request);
-        _logger.LogInformation("Submission Created From Service Successfully");
+        logger.LogInformation("Submission Created From Service Successfully");
         return CreatedAtAction(nameof(GetById), new { id = submission.Id }, submission);
+
+    }
+
+    [HttpPost]
+    [Authorize]
+    [Route("submissions/{submissionId}/files")]
+    public async Task<IActionResult> UploadFile(int submissionId, IFormFile file)
+    {
+
+        var result = await fileStorageService.SaveAsync(submissionId,file);
+        return Ok(result);
+    }
+
+   
+    [HttpGet]
+    [Authorize]
+    [Route("submission-files/{id}/download")]
+    public async Task<IActionResult> DownloadFile(int id)
+    {
+
+        SubmissionFile metaData = await database.SubmissionFile.FindAsync(id);
+        if (metaData == null)
+        {
+            throw new NotFoundException("File does not exists");
+        }
+        var stream = await fileStorageService.OpenReadAsync(metaData.StorageName);
+        return File(stream, metaData.ContentType,metaData.OriginalFileName);
+
+
+    }
+
+    [HttpDelete]
+    [Authorize]
+    [Route("submission-files/{id}/delete")]
+    public async Task<IActionResult> DeleteFile(int id)
+    {
+
+        SubmissionFile metaData = await database.SubmissionFile.FindAsync(id);
+        if (metaData == null)
+        {
+            throw new NotFoundException("File does not exists");
+        }
+        await fileStorageService.DeleteAsync(metaData.StorageName);
+        database.SubmissionFile.Remove(metaData);
+        await database.SaveChangesAsync();
+        return NoContent();
+
 
     }
 

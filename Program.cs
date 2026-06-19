@@ -62,6 +62,7 @@ builder.Services.AddScoped<ILearningTaskService,LearningTaskService>();
 builder.Services.AddScoped<ITaskAssignmentService,TaskAssignmentService>();
 builder.Services.AddScoped<ISubmissionService,SubmissionService>();
 builder.Services.AddScoped<IReviewService,ReviewService>();
+builder.Services.AddScoped<IFileStorageService,LocalFileStorageService>();
 
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -114,6 +115,8 @@ builder.Services.AddAuthentication(options =>
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]))
             };
         });
+
+builder.Services.AddHttpContextAccessor();
 
 
 
@@ -173,6 +176,7 @@ if (app.Environment.IsDevelopment())
 //       db.SaveChanges();
 //    }
 // }
+
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseHttpsRedirection();
@@ -181,5 +185,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseStaticFiles();
+app.UseDefaultFiles();
 
 app.Run();

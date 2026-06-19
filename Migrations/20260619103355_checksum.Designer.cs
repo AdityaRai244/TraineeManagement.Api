@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TraineeManagement.Api.Data;
 
@@ -11,9 +12,11 @@ using TraineeManagement.Api.Data;
 namespace TraineeManagement.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260619103355_checksum")]
+    partial class checksum
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -357,7 +360,7 @@ namespace TraineeManagement.Api.Migrations
             modelBuilder.Entity("TraineeManagement.Api.Models.SubmissionFile", b =>
                 {
                     b.HasOne("TraineeManagement.Api.Models.Submission", "Submission")
-                        .WithMany("SubmissionFiles")
+                        .WithMany("SubmissionFile")
                         .HasForeignKey("SubmissionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -408,7 +411,7 @@ namespace TraineeManagement.Api.Migrations
                 {
                     b.Navigation("Reviews");
 
-                    b.Navigation("SubmissionFiles");
+                    b.Navigation("SubmissionFile");
                 });
 
             modelBuilder.Entity("TraineeManagement.Api.Models.TaskAssignment", b =>

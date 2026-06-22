@@ -147,6 +147,116 @@ namespace TraineeManagement.Api.Migrations
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
+            migrationBuilder.CreateTable(
+                name: "Submission",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    TaskAssignmentId = table.Column<int>(type: "int", nullable: false),
+                    SubmissionUrl = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Notes = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    SubmittedDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Submission", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Submission_TaskAssignment_TaskAssignmentId",
+                        column: x => x.TaskAssignmentId,
+                        principalTable: "TaskAssignment",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "Reviews",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    SubmissionId = table.Column<int>(type: "int", nullable: false),
+                    MentorId = table.Column<int>(type: "int", nullable: false),
+                    Feedback = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Score = table.Column<int>(type: "int", nullable: true),
+                    ReviewStatus = table.Column<int>(type: "int", nullable: false),
+                    ReviewedDate = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Reviews", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Reviews_Mentors_MentorId",
+                        column: x => x.MentorId,
+                        principalTable: "Mentors",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Reviews_Submission_SubmissionId",
+                        column: x => x.SubmissionId,
+                        principalTable: "Submission",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "SubmissionFile",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    SubmissionId = table.Column<int>(type: "int", nullable: false),
+                    OriginalFileName = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    StorageName = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    ContentType = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Size = table.Column<long>(type: "bigint", nullable: false),
+                    CheckSum = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    UploadedBy = table.Column<int>(type: "int", nullable: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedDate = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SubmissionFile", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SubmissionFile_Submission_SubmissionId",
+                        column: x => x.SubmissionId,
+                        principalTable: "Submission",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reviews_MentorId",
+                table: "Reviews",
+                column: "MentorId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reviews_SubmissionId",
+                table: "Reviews",
+                column: "SubmissionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Submission_TaskAssignmentId",
+                table: "Submission",
+                column: "TaskAssignmentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SubmissionFile_SubmissionId",
+                table: "SubmissionFile",
+                column: "SubmissionId");
+
             migrationBuilder.CreateIndex(
                 name: "IX_TaskAssignment_LearningTaskId",
                 table: "TaskAssignment",
@@ -173,10 +283,19 @@ namespace TraineeManagement.Api.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "TaskAssignment");
+                name: "Reviews");
+
+            migrationBuilder.DropTable(
+                name: "SubmissionFile");
 
             migrationBuilder.DropTable(
                 name: "Users");
+
+            migrationBuilder.DropTable(
+                name: "Submission");
+
+            migrationBuilder.DropTable(
+                name: "TaskAssignment");
 
             migrationBuilder.DropTable(
                 name: "LearningTasks");

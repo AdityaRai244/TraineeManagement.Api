@@ -12,8 +12,8 @@ using TraineeManagement.Api.Data;
 namespace TraineeManagement.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260619093337_SubmissionFile")]
-    partial class SubmissionFile
+    [Migration("20260622113038_initial")]
+    partial class initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -176,8 +176,9 @@ namespace TraineeManagement.Api.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CheckSum")
-                        .HasColumnType("int");
+                    b.Property<string>("CheckSum")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ContentType")
                         .IsRequired()
@@ -359,7 +360,7 @@ namespace TraineeManagement.Api.Migrations
             modelBuilder.Entity("TraineeManagement.Api.Models.SubmissionFile", b =>
                 {
                     b.HasOne("TraineeManagement.Api.Models.Submission", "Submission")
-                        .WithMany("SubmissionFile")
+                        .WithMany("SubmissionFiles")
                         .HasForeignKey("SubmissionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -410,7 +411,7 @@ namespace TraineeManagement.Api.Migrations
                 {
                     b.Navigation("Reviews");
 
-                    b.Navigation("SubmissionFile");
+                    b.Navigation("SubmissionFiles");
                 });
 
             modelBuilder.Entity("TraineeManagement.Api.Models.TaskAssignment", b =>

@@ -13,9 +13,14 @@ public class MentorController : ControllerBase
 {
     
     private readonly IMentorService mentorService;
+    // private readonly IRedisService<Mentor> redisService;
+
     private readonly ILogger<MentorController> _logger;
-    public MentorController(IMentorService mentorService, ILogger<MentorController> logger)
+    public MentorController(
+        // IRedisService<Mentor> redisService,
+        IMentorService mentorService, ILogger<MentorController> logger)
     {
+        // this.redisService = redisService;
         this.mentorService = mentorService;
         _logger = logger;
 
@@ -52,6 +57,23 @@ public class MentorController : ControllerBase
         return Ok(mentor);
 
     }
+
+    
+    // [HttpGet("{id}/redis")]
+    // [Authorize]
+    // public async Task<ActionResult> GetRedisCheck(int id)
+    // {
+
+    //     var mentor = await redisService.GetAsync("asdfasdf");
+    //     // if(mentor == null)
+    //     // {
+    //     //     _logger.LogError("Mentor with Id {id} Not found",id);
+    //     //     return NotFound(new {message = $"Mentor with {id} not found"});
+    //     // }
+    //     // _logger.LogInformation("Mentor with Id {id} Fetched from service Successfully",id);
+    //     return Ok(mentor);
+
+    // }
 
     
     [HttpPost]

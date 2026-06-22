@@ -19,6 +19,7 @@ x86/
 *.sln.docstates
 
 days
+docker-compose.yml
 
 ## --- Operating System Files ---
 .DS_Store

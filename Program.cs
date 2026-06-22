@@ -63,6 +63,8 @@ builder.Services.AddScoped<ITaskAssignmentService,TaskAssignmentService>();
 builder.Services.AddScoped<ISubmissionService,SubmissionService>();
 builder.Services.AddScoped<IReviewService,ReviewService>();
 builder.Services.AddScoped<IFileStorageService,LocalFileStorageService>();
+builder.Services.AddScoped(typeof(IRedisService<>), typeof(RedisService<>));
+
 
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -118,7 +120,10 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddHttpContextAccessor();
 
-
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+});
 
 
 

@@ -10,18 +10,20 @@ public class TraineeService : ITraineeService
 {
 
 
-    private readonly AppDbContext database;
+    private readonly AppDbContext _database;
     private readonly ILogger<AuthService> _logger;
+    private readonly IRedisService<Trainee> _redisCache;
 
-    public TraineeService(AppDbContext database, ILogger<AuthService> logger)
+    public TraineeService(IRedisService<Trainee> redisCache, AppDbContext database, ILogger<AuthService> logger)
     {
-        this.database = database;
+        _database = database;
         _logger = logger;
+        _redisCache = redisCache;
     }
 
     public async Task<PagedResponseDTO> GetAllTrainees(UserStatus? status, string? search = null, int pageNumber = 1, int pageSize = 10)
     {
-        var query = database.Trainees.AsQueryable();
+        var query = _database.Trainees.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -37,10 +39,10 @@ public class TraineeService : ITraineeService
             _logger.LogInformation("Implemented Search Filtering");
         }
 
-          if (status.HasValue)
+        if (status.HasValue)
         {
             query = query.Where(t => t.Status == status.Value);
-                _logger.LogInformation("Implemented Status Filtering");
+            _logger.LogInformation("Implemented Status Filtering");
         }
 
 
@@ -48,30 +50,39 @@ public class TraineeService : ITraineeService
         var trainees = await query.AsNoTracking().Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
         _logger.LogInformation("Implemented Pagination");
 
-        // var trainees = await query.ToListAsync();
-        var response = new PagedResponseDTO{
+        var response = new PagedResponseDTO
+        {
             PageNumber = pageNumber,
             PageSize = pageSize,
             TotalRecords = count,
             Data = trainees
         };
         return response;
-        // return new
-        // {
-        //     PageNumber = pageNumber 
 
     }
 
     public async Task<TraineeResponseDTO?> GetTraineeById(int id)
     {
 
-        var trainee = await database.Trainees.FindAsync(id);
-        if (trainee == null)
+        string idString = id.ToString();
+        var trainee = await _redisCache.GetAsync(idString);
+
+        if(trainee is not null)
+        {
+            _logger.LogInformation("Cache HIT for trainee {Id}", id);
+            return MapResponse(trainee);
+        }
+
+        _logger.LogWarning("Cache MISS for trainee {Id}. Accessing DB.", id);
+        var dbTrainee = await _database.Trainees.FindAsync(id);
+        if (dbTrainee == null)
         {
             throw new NotFoundException("Trainee");
         }
+        await _redisCache.SetAsync(idString,dbTrainee);
+        _logger.LogInformation("Cache updated for Trainee {Id}", id);
         _logger.LogInformation("Get Trainee By Id Request Successful for Id No : {id}", id);
-        return MapResponse(trainee);
+        return MapResponse(dbTrainee);
     }
 
     public async Task<TraineeResponseDTO> CreateTrainee(CreateTraineeRequestDTO request)
@@ -89,9 +100,9 @@ public class TraineeService : ITraineeService
 
         };
 
-        await database.Trainees.AddAsync(trainee);
+        await _database.Trainees.AddAsync(trainee);
 
-        await database.SaveChangesAsync();
+        await _database.SaveChangesAsync();
         _logger.LogInformation("Trainee Created Succesfully");
         return MapResponse(trainee);
 
@@ -100,8 +111,7 @@ public class TraineeService : ITraineeService
     public async Task<TraineeResponseDTO?> UpdateTrainee(int id, UpdateTraineeRequestDTO request)
     {
 
-
-        var trainee = await database.Trainees.FindAsync(id);
+        var trainee = await _database.Trainees.FindAsync(id);
         if (trainee == null)
         {
             throw new NotFoundException("Trainee");
@@ -115,8 +125,14 @@ public class TraineeService : ITraineeService
         trainee.TechStack = request.TechStack;
         trainee.UpdatedDate = DateTime.UtcNow;
 
-        await database.SaveChangesAsync();
+        await _database.SaveChangesAsync();
         _logger.LogInformation("Update Trainee Request Successful for Id No : {id}", id);
+
+        await _redisCache.RemoveAsync(id.ToString());
+        await _redisCache.SetAsync(id.ToString(),trainee);
+
+        _logger.LogInformation("Cached Updated for Trainee Id No : {id}", id);
+
 
         return MapResponse(trainee);
 
@@ -124,14 +140,18 @@ public class TraineeService : ITraineeService
 
     public async Task<bool> DeleteTrainee(int id)
     {
-        var trainee = await database.Trainees.FindAsync(id);
+        var trainee = await _database.Trainees.FindAsync(id);
         if (trainee == null)
         {
             throw new NotFoundException("Trainee");
         }
-        database.Trainees.Remove(trainee);
-        await database.SaveChangesAsync();
+        _database.Trainees.Remove(trainee);
+        await _database.SaveChangesAsync();
         _logger.LogInformation("Delete Trainee Successful for Id No : {id}", id);
+
+        await _redisCache.RemoveAsync(id.ToString());
+        _logger.LogInformation("Cache removed for Trainee Id : {id}", id);
+
         return true;
     }
     public TraineeResponseDTO MapResponse(Trainee newTrainee)

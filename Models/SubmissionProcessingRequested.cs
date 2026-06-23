@@ -5,10 +5,10 @@ namespace TraineeManagement.Api.Models;
 public class SubmissionProcessingRequested
 {
 
-    public string MessageId { get; set; } = string.Empty;
-    public string CorrelationId { get; set; } = string.Empty;
+    public Guid MessageId { get; set; }
+    public Guid CorrelationId { get; set; }
     public int SubmissionId { get; set; }
-    public string FileId { get; set; } = string.Empty;
+    public int FileId { get; set; }
     public DateTime RequestedAt { get; set; }
     public string ContractVersion = "v1.0";
 

@@ -117,12 +117,13 @@ class LocalFileStorageService : IFileStorageService
             await database.SaveChangesAsync();
 
             var data = new SubmissionProcessingRequested {
-               MessageId = Guid.NewGuid().ToString(), 
-               CorrelationId = Guid.NewGuid().ToString(), 
+               MessageId = Guid.NewGuid(), 
+               CorrelationId = Guid.NewGuid(), 
                SubmissionId = submissionId,
-               FileId = Guid.NewGuid().ToString(), 
+               FileId = submissionFile.Id, 
                RequestedAt = DateTime.UtcNow,
             };
+            Console.Write(data);
             await submissionProcessingService.PostSubmissionProcessingAsync(data);
 
             return $"/uploads/{fileName}";

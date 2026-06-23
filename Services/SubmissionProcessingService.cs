@@ -17,11 +17,11 @@ public class SubmissionProcessingService : ISubmissionProcessingService
 
         var factory = new ConnectionFactory()
         {
-            HostName = _configuration["RabbitMQ:Host"],
-            Port = int.Parse(_configuration["RabbitMQ:Port"]),
-            VirtualHost = _configuration["RabbitMQ:VirtualHost"],
-            UserName = _configuration["RabbitMQ:Username"],
-            Password = _configuration["RabbitMQ:Password"],
+            HostName = _configuration["RabbitMQ:Host"]!,
+            Port = int.Parse(_configuration["RabbitMQ:Port"]!),
+            VirtualHost = _configuration["RabbitMQ:VirtualHost"]!,
+            UserName = _configuration["RabbitMQ:Username"]!,
+            Password = _configuration["RabbitMQ:Password"]!,
         };
 
         try
@@ -49,7 +49,8 @@ public class SubmissionProcessingService : ISubmissionProcessingService
                     mandatory: false,
                     basicProperties: properties,
                     body: body
-                ); Console.WriteLine($"{message} has been sent");
+                );
+                Console.WriteLine($"{message} has been sent");
             }
 
 

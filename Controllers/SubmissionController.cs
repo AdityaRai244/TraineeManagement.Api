@@ -46,6 +46,16 @@ public class SubmissionController : ControllerBase
         return Ok(submissions);
     }
 
+    [HttpGet("{submissionId}/summary")]
+    [Authorize]
+    public async Task<ActionResult> GetSummary([FromRoute] int submissionId)
+    {
+
+        var summary = await submissionService.GetSubmissionSummaryById(submissionId);
+        logger.LogInformation("Summary fetched from service successfully");
+        return Ok(summary);
+    }
+
     [HttpGet("submissions/{id}")]
     [Authorize]
     public async Task<ActionResult> GetById(int id)
@@ -80,27 +90,25 @@ public class SubmissionController : ControllerBase
     public async Task<IActionResult> UploadFile(int submissionId, IFormFile file)
     {
 
-        var result = await fileStorageService.SaveAsync(submissionId,file);
+        var result = await fileStorageService.SaveAsync(submissionId, file);
 
-        
-
-        return Ok(result);
+        return Accepted(result);
     }
 
-   
+
     [HttpGet]
     [Authorize]
     [Route("submission-files/{id}/download")]
     public async Task<IActionResult> DownloadFile(int id)
     {
 
-        SubmissionFile metaData = await database.SubmissionFile.FindAsync(id);
+        var metaData = await database.SubmissionFile.FindAsync(id);
         if (metaData == null)
         {
             throw new NotFoundException("File does not exists");
         }
         var stream = await fileStorageService.OpenReadAsync(metaData.StorageName);
-        return File(stream, metaData.ContentType,metaData.OriginalFileName);
+        return File(stream, metaData.ContentType, metaData.OriginalFileName);
 
 
     }
@@ -111,7 +119,7 @@ public class SubmissionController : ControllerBase
     public async Task<IActionResult> DeleteFile(int id)
     {
 
-        SubmissionFile metaData = await database.SubmissionFile.FindAsync(id);
+        var metaData = await database.SubmissionFile.FindAsync(id);
         if (metaData == null)
         {
             throw new NotFoundException("File does not exists");

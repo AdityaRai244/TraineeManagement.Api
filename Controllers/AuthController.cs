@@ -29,7 +29,6 @@ public class LoginController : ControllerBase
             _logger.LogError("Invalid Username Or Password");
             return NotFound(new {message = $"{request.Username} is an Invalid Username or Password is incorrect."});
         }
-        Response.Headers.Add("Authorization", "Bearer " + response.Token);
         _logger.LogInformation("Logged in successfully");
         return Ok(response);
 

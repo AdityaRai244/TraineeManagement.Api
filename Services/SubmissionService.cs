@@ -10,26 +10,28 @@ public class SubmissionService : ISubmissionService
 
     private readonly AppDbContext database;
     private readonly ILogger<SubmissionService> _logger;
+    private readonly IRedisService<SubmissionSummaryDTO> _redisCache;
 
-    public SubmissionService(AppDbContext database, ILogger<SubmissionService> logger)
+    public SubmissionService(IRedisService<SubmissionSummaryDTO> redisCache, AppDbContext database, ILogger<SubmissionService> logger)
     {
         this.database = database;
         _logger = logger;
+        _redisCache = redisCache;
     }
 
-    public async Task<IEnumerable<SubmissionResponseDTO>> GetAllSubmissions(SubmissionStatus? status,  int pageNumber = 1, int pageSize = 10)
+    public async Task<IEnumerable<SubmissionResponseDTO>> GetAllSubmissions(SubmissionStatus? status, int pageNumber = 1, int pageSize = 10)
     {
         var query = database.Submission.AsQueryable();
 
         if (status.HasValue)
         {
             query = query.Where(t => t.Status == status.Value);
-                _logger.LogInformation("Implemented Status Filtering");
+            _logger.LogInformation("Implemented Status Filtering");
         }
 
 
         var Submission = await query.AsNoTracking().Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
-             _logger.LogInformation("Implemented Pagination");
+        _logger.LogInformation("Implemented Pagination");
 
         return Submission.Select(MapResponse);
 
@@ -39,11 +41,11 @@ public class SubmissionService : ISubmissionService
     {
 
         var Submission = await database.Submission.FindAsync(id);
-        if(Submission == null)
+        if (Submission == null)
         {
             throw new NotFoundException("Submission");
         }
-        _logger.LogInformation("Get Submission By Id Request Successful for Id No : {id}",id);
+        _logger.LogInformation("Get Submission By Id Request Successful for Id No : {id}", id);
         return MapResponse(Submission);
     }
 
@@ -71,6 +73,32 @@ public class SubmissionService : ISubmissionService
         await database.SaveChangesAsync();
         _logger.LogInformation("TaskAssignment Created Succesfully");
         return MapResponse(submission);
+
+    }
+
+    public async Task<SubmissionSummaryDTO> GetSubmissionSummaryById(int submissionId)
+    {
+        string idString = submissionId.ToString();
+        var summary = await _redisCache.GetAsync(idString);
+
+        if (summary is not null)
+        {
+            _logger.LogInformation("Cache HIT for trainee {Id}", submissionId);
+            return summary;
+        }
+        Submission Submission = await database.Submission.FindAsync(submissionId);
+        if (Submission == null)
+        {
+            throw new NotFoundException("Submission");
+        }
+        _logger.LogInformation("Get Submission By Id Request Successful for Id No : {id}", submissionId);
+        return new SubmissionSummaryDTO
+        {
+            TaskAssignmentId = Submission.TaskAssignmentId,
+            Status = Submission.Status,
+            SubmissionUrl = Submission.SubmissionUrl,
+            SubmittedDate= Submission.SubmittedDate
+        };
 
     }
 

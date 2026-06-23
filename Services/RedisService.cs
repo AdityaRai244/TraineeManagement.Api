@@ -63,7 +63,7 @@ public class RedisService<T> : IRedisService<T> where T : class
             string finalData = JsonSerializer.Serialize(data);
             var options = new DistributedCacheEntryOptions()
             .SetAbsoluteExpiration(expiration ?? _defaultExpiration);
-            await _cache.SetStringAsync(fullKey, finalData,options);
+            await _cache.SetStringAsync(fullKey, finalData, options);
             _logger.LogInformation("Cache set for key: {Key}", fullKey);
         }
         catch (Exception ex)
@@ -73,10 +73,19 @@ public class RedisService<T> : IRedisService<T> where T : class
 
     }
 
-    public Task RemoveAsync(string id)
+    public async Task RemoveAsync(string id)
     {
-        string key = GetCacheKey(id);
-        return _cache.RemoveAsync(key);
+        try
+        {
+
+            string key = GetCacheKey(id);
+            await _cache.RemoveAsync(key);
+            _logger.LogInformation("Cache remove for key: {Key}", key);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to set redis cache for ID: {Id}", id);
+        }
     }
 
 

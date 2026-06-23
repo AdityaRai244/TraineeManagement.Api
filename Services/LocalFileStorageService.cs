@@ -14,14 +14,17 @@ class LocalFileStorageService : IFileStorageService
     private readonly IConfiguration _config;
     private readonly AppDbContext database;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ISubmissionProcessingService submissionProcessingService;
 
 
 
-    public LocalFileStorageService(IConfiguration config, AppDbContext database, IHttpContextAccessor httpContextAccessor)
+
+    public LocalFileStorageService(IConfiguration config, AppDbContext database, IHttpContextAccessor httpContextAccessor,ISubmissionProcessingService submissionProcessingService)
     {
         this.database = database;
         this._config = config;
         this._httpContextAccessor = httpContextAccessor;
+        this.submissionProcessingService = submissionProcessingService;
     }
 
 
@@ -69,18 +72,9 @@ class LocalFileStorageService : IFileStorageService
         }
 
 
-        string? basePath = _config["FileStorageService:Path"]!;
-        basePath = basePath.Replace('/', '\\').Trim();
-
-        if (basePath.Contains(":"))
-        {
-            char driveLetter = char.ToLower(basePath[0]);
-            string rest = basePath.Substring(2).Replace('\\', '/');
-            basePath = $"/mnt/{driveLetter}{rest}";
-        }
-
-
-        string folderPath = Path.Combine(basePath, "uploads");
+        string? basePath = _config["FileStorageService:Path"] ?? AppDomain.CurrentDomain.BaseDirectory;;
+        string absoluteBasePath = Path.GetFullPath(basePath);
+        string folderPath = Path.Combine(absoluteBasePath, "uploads");
         if (!Directory.Exists(folderPath))
         {
             Directory.CreateDirectory(folderPath);
@@ -122,6 +116,15 @@ class LocalFileStorageService : IFileStorageService
             await database.SubmissionFile.AddAsync(submissionFile);
             await database.SaveChangesAsync();
 
+            var data = new SubmissionProcessingRequested {
+               MessageId = Guid.NewGuid().ToString(), 
+               CorrelationId = Guid.NewGuid().ToString(), 
+               SubmissionId = submissionId,
+               FileId = Guid.NewGuid().ToString(), 
+               RequestedAt = DateTime.UtcNow,
+            };
+            await submissionProcessingService.PostSubmissionProcessingAsync(data);
+
             return $"/uploads/{fileName}";
         }
         else
@@ -137,16 +140,10 @@ class LocalFileStorageService : IFileStorageService
     public Task<bool> ExistsAsync(string fileName)
     {
 
-        string? basePath = _config["FileStorageService:Path"]!;
-        basePath = basePath.Replace('/', '\\').Trim();
+        string? basePath = _config["FileStorageService:Path"] ?? AppDomain.CurrentDomain.BaseDirectory;;
+        string absoluteBasePath = Path.GetFullPath(basePath);
 
-        if (basePath.Contains(":"))
-        {
-            char driveLetter = char.ToLower(basePath[0]);
-            string rest = basePath.Substring(2).Replace('\\', '/');
-            basePath = $"/mnt/{driveLetter}{rest}";
-        }
-        string folderPath = Path.Combine(basePath, "uploads");
+        string folderPath = Path.Combine(absoluteBasePath, "uploads");
         var filePath = Path.Combine(folderPath, fileName);
 
         return Task.FromResult(File.Exists(filePath));
@@ -157,16 +154,10 @@ class LocalFileStorageService : IFileStorageService
     public Task DeleteAsync(string fileName)
     {
 
-        string? basePath = _config["FileStorageService:Path"]!;
-        basePath = basePath.Replace('/', '\\').Trim();
+        string? basePath = _config["FileStorageService:Path"] ?? AppDomain.CurrentDomain.BaseDirectory;;
+        string absoluteBasePath = Path.GetFullPath(basePath);
 
-        if (basePath.Contains(":"))
-        {
-            char driveLetter = char.ToLower(basePath[0]);
-            string rest = basePath.Substring(2).Replace('\\', '/');
-            basePath = $"/mnt/{driveLetter}{rest}";
-        }
-        string folderPath = Path.Combine(basePath, "uploads");
+        string folderPath = Path.Combine(absoluteBasePath, "uploads");
         var filePath = Path.Combine(folderPath, fileName);
 
 
@@ -183,16 +174,11 @@ class LocalFileStorageService : IFileStorageService
     public async Task<Stream> OpenReadAsync(string fileName)
     {
 
-        string? basePath = _config["FileStorageService:Path"]!;
-        basePath = basePath.Replace('/', '\\').Trim();
+        string? basePath = _config["FileStorageService:Path"] ?? AppDomain.CurrentDomain.BaseDirectory;;
+        string absoluteBasePath = Path.GetFullPath(basePath);
 
-        if (basePath.Contains(":"))
-        {
-            char driveLetter = char.ToLower(basePath[0]);
-            string rest = basePath.Substring(2).Replace('\\', '/');
-            basePath = $"/mnt/{driveLetter}{rest}";
-        }
-        string folderPath = Path.Combine(basePath, "uploads");
+   
+        string folderPath = Path.Combine(absoluteBasePath, "uploads");
         var filePath = Path.Combine(folderPath, fileName);
 
         if (File.Exists(filePath))

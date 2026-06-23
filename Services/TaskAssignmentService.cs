@@ -12,9 +12,9 @@ public class TaskAssignmentService : ITaskAssignmentService
 
     private readonly AppDbContext _database;
     private readonly ILogger<TaskAssignmentService> _logger;
-    private readonly IRedisService<TaskAssignment> _redisCache;
+    private readonly IRedisService<TaskAssignmentResponseDTO> _redisCache;
 
-    public TaskAssignmentService(IRedisService<TaskAssignment> redisCache, AppDbContext database, ILogger<TaskAssignmentService> logger)
+    public TaskAssignmentService(IRedisService<TaskAssignmentResponseDTO> redisCache, AppDbContext database, ILogger<TaskAssignmentService> logger)
     {
         _redisCache = redisCache;
         _database = database;
@@ -49,7 +49,7 @@ public class TaskAssignmentService : ITaskAssignmentService
         if (taskById is not null)
         {
             _logger.LogInformation("Cache HIT for taskById {Id}", id);
-            return MapResponse(taskById);
+            return taskById;
         }
 
         _logger.LogWarning("Cache MISS for Review {Id}. Accessing DB.", id);
@@ -60,11 +60,13 @@ public class TaskAssignmentService : ITaskAssignmentService
         {
             throw new NotFoundException("TaskAssignment");
         }
-        await _redisCache.SetAsync(idString, TaskAssignmentDB);
+
+        TaskAssignmentResponseDTO mappedResponse = MapResponse(TaskAssignmentDB);
+        await _redisCache.SetAsync(idString, mappedResponse);
         _logger.LogInformation("Cache updated for Task Assignment {Id}", id);
         _logger.LogInformation("Get Task By Id Request Successful for Id No : {id}", id);
 
-        return MapResponse(TaskAssignmentDB);
+        return mappedResponse;
     }
 
     public async Task<TaskAssignmentResponseDTO> CreateTaskAssignment(CreateTaskAssignmentDTO request)
@@ -131,7 +133,6 @@ public class TaskAssignmentService : ITaskAssignmentService
         _logger.LogInformation("Update Task Assignment Request Successful for Id No : {id}", id);
 
         await _redisCache.RemoveAsync(id.ToString());
-        await _redisCache.SetAsync(id.ToString(), TaskAssignment);
 
         _logger.LogInformation("Cached Updated for Task Assignment Id No : {id}", id);
 

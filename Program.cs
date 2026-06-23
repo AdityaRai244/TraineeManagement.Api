@@ -44,7 +44,7 @@ builder.Services.AddSwaggerGen(options =>
         In = ParameterLocation.Header,
         Scheme = "Bearer",
         BearerFormat = "JWT",
-        Description = "Enter your JWT token status below."
+        Description = "Enter your JWT token status below.",
 
     });
 
@@ -64,6 +64,7 @@ builder.Services.AddScoped<ISubmissionService,SubmissionService>();
 builder.Services.AddScoped<IReviewService,ReviewService>();
 builder.Services.AddScoped<IFileStorageService,LocalFileStorageService>();
 builder.Services.AddScoped(typeof(IRedisService<>), typeof(RedisService<>));
+builder.Services.AddSingleton<ISubmissionProcessingService, SubmissionProcessingService>();
 
 
 
@@ -135,7 +136,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+    options.EnablePersistAuthorization(); 
+    });
 
     // app.UseExceptionHandler(options =>
     // {
@@ -168,13 +172,13 @@ if (app.Environment.IsDevelopment())
 //    {
 //       var admin = new User
 //       {
-//          Username = "admin",
+//          Username = "string",
 //          Email = "aditya@gmail.com",
 //          PasswordHash = "",
 //          Role = UserRole.Admin
 //       };
 //       var hasher = new PasswordHasher<User>();
-//       string hashedPassword = hasher.HashPassword(admin, "admin");
+//       string hashedPassword = hasher.HashPassword(admin, "string");
 //       admin.PasswordHash = hashedPassword;
 //       Console.WriteLine("Seeding user: " + admin);
 //       db.Users.Add(admin);

@@ -12,9 +12,9 @@ public class TraineeService : ITraineeService
 
     private readonly AppDbContext _database;
     private readonly ILogger<AuthService> _logger;
-    private readonly IRedisService<Trainee> _redisCache;
+    private readonly IRedisService<TraineeResponseDTO> _redisCache;
 
-    public TraineeService(IRedisService<Trainee> redisCache, AppDbContext database, ILogger<AuthService> logger)
+    public TraineeService(IRedisService<TraineeResponseDTO> redisCache, AppDbContext database, ILogger<AuthService> logger)
     {
         _database = database;
         _logger = logger;
@@ -70,7 +70,7 @@ public class TraineeService : ITraineeService
         if(trainee is not null)
         {
             _logger.LogInformation("Cache HIT for trainee {Id}", id);
-            return MapResponse(trainee);
+            return trainee;
         }
 
         _logger.LogWarning("Cache MISS for trainee {Id}. Accessing DB.", id);
@@ -79,10 +79,14 @@ public class TraineeService : ITraineeService
         {
             throw new NotFoundException("Trainee");
         }
-        await _redisCache.SetAsync(idString,dbTrainee);
-        _logger.LogInformation("Cache updated for Trainee {Id}", id);
+
+         TraineeResponseDTO mappedResponse = MapResponse(dbTrainee);
+        await _redisCache.SetAsync(idString, mappedResponse);
+         _logger.LogInformation("Cache updated for Trainee {Id}", id);
         _logger.LogInformation("Get Trainee By Id Request Successful for Id No : {id}", id);
-        return MapResponse(dbTrainee);
+      
+        return mappedResponse;
+
     }
 
     public async Task<TraineeResponseDTO> CreateTrainee(CreateTraineeRequestDTO request)
@@ -129,7 +133,6 @@ public class TraineeService : ITraineeService
         _logger.LogInformation("Update Trainee Request Successful for Id No : {id}", id);
 
         await _redisCache.RemoveAsync(id.ToString());
-        await _redisCache.SetAsync(id.ToString(),trainee);
 
         _logger.LogInformation("Cached Updated for Trainee Id No : {id}", id);
 

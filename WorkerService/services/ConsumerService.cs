@@ -37,8 +37,18 @@ public class ConsumerService : BackgroundService
             _connection = await factory.CreateConnectionAsync(stoppingToken);
             channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
+            await channel.ExchangeDeclareAsync("SubmissionFailedExchange", ExchangeType.Direct);
+            await channel.QueueDeclareAsync(queue: "submission-failed", durable: true, exclusive: false, autoDelete: false, arguments: null);
+            await channel.QueueBindAsync("submission-failed", "SubmissionFailedExchange", "SubmissionFailedExchangeKey", null);
+
+            var queueArgs = new Dictionary<string, object>
+            {
+                {"x-dead-letter-exchange","SubmissionFailedExchange"},
+                {"x-dead-letter-routing-key","SubmissionFailedExchangeKey"}
+            };
+
             await channel.ExchangeDeclareAsync("SubmissionProcessingExchange", ExchangeType.Direct);
-            await channel.QueueDeclareAsync(queue: "submission-processing", durable: true, exclusive: false, autoDelete: false, arguments: null);
+            await channel.QueueDeclareAsync(queue: "submission-processing", durable: true, exclusive: false, autoDelete: false, arguments: queueArgs);
             await channel.QueueBindAsync("submission-processing", "SubmissionProcessingExchange", "SubmissionProcessingExchangeKey", null);
             Console.WriteLine("Connection has been created");
 
@@ -65,46 +75,78 @@ public class ConsumerService : BackgroundService
                     throw new Exception("Received an empty or invalid message payload.");
                 }
 
-                try
+
+                using (var scope = _scopeFactory.CreateScope())
                 {
-
-                    using (var scope = _scopeFactory.CreateScope())
+                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    var job = await db.ProcessingJob.FirstOrDefaultAsync(t => t.CorrelationId == payload.CorrelationId);
+                    if (job == null)
                     {
-                        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                        var job = await db.ProcessingJob.FirstOrDefaultAsync(t => t.CorrelationId == payload.CorrelationId);
-
-                        if (job.Status == JobStatus.Completed)
-                        {
-                            throw new Exception("Duplicate job received");
-                        }
-
-                        job.Status = JobStatus.Processing;
-                        await db.SaveChangesAsync();
-
-                        await processMessageAsync(payload);
-
-                        job.Status = JobStatus.Completed;
-                        Console.WriteLine("completed");
-                        await db.SaveChangesAsync();
+                        await channel.BasicRejectAsync(ea.DeliveryTag, false);
+                        return;
+                    }
+                    if (job.Status == JobStatus.Completed)
+                    {
+                        await channel.BasicAckAsync(ea.DeliveryTag, false);
+                        return;
                     }
 
 
-                    await channel.BasicAckAsync(ea.DeliveryTag, false);
 
+                    try
+                    {
+
+
+                        var SubmissionFile = await db.SubmissionFile
+         .FirstOrDefaultAsync(f => f.Id == payload.FileId);
+
+                        var isDuplicate = await db.SubmissionFile
+                      .AnyAsync(f => f.CheckSum == SubmissionFile.CheckSum && f.Id != SubmissionFile.Id);
+
+
+                        if (isDuplicate)
+                        {
+                            Console.WriteLine($"Skipping processing. File with checksum {SubmissionFile.CheckSum} already processed.");
+
+                            job.Status = JobStatus.Completed;
+                            await db.SaveChangesAsync();
+                            await channel.BasicAckAsync(ea.DeliveryTag, false);
+                            return;
+                        }
+
+                        job.Attempts += 1;
+                        job.Status = JobStatus.Processing;
+                        await db.SaveChangesAsync();
+
+                        await processMessageAsync(payload, db);
+                        // throw new Exception();
+
+                        job.Status = JobStatus.Completed;
+                        await db.SaveChangesAsync();
+                        await channel.BasicAckAsync(ea.DeliveryTag, false);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (job.Attempts >= 3)
+                        {
+                            job.Status = JobStatus.Failed;
+                            await db.SaveChangesAsync();
+                            await channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: false);
+                        }
+                        else
+                        {
+                            Console.WriteLine("hii");
+                            await db.SaveChangesAsync();
+                            await channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: true);
+                        }
+                    }
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
+                ;
 
-                    await channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: true);
-
-                }
 
             };
 
-
             string consumerTag = await channel.BasicConsumeAsync("submission-processing", autoAck: false, consumer);
-
             Console.WriteLine(" Press control C  to exit.");
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -118,8 +160,19 @@ public class ConsumerService : BackgroundService
 
     }
 
-    public async Task processMessageAsync(SubmissionProcessingRequested? payload)
+    public async Task processMessageAsync(SubmissionProcessingRequested payload, AppDbContext db)
     {
+
+        var submissionFile = await db.SubmissionFile.FirstOrDefaultAsync(t => t.Id == payload.FileId);
+
+        // using var checkSumStream = file.OpenReadStream();
+        // using var sha256 = SHA256.Create();
+
+        // byte[] hashBytes = await sha256.ComputeHashAsync(checkSumStream);
+
+        // string calculatedCheckSum = Convert.ToHexString(hashBytes);
+
+
         Console.WriteLine("Processing");
         await Task.Delay(5000);
         Console.WriteLine("Processing done");

@@ -31,8 +31,14 @@ public class SubmissionProcessingService : ISubmissionProcessingService
             using (var channel = await connection.CreateChannelAsync())
             {
 
+                var queueArgs = new Dictionary<string, object>
+            {
+                {"x-dead-letter-exchange","SubmissionFailedExchange"},
+                {"x-dead-letter-routing-key","SubmissionFailedExchangeKey"}
+            };
+
                 await channel.ExchangeDeclareAsync("SubmissionProcessingExchange", ExchangeType.Direct);
-                await channel.QueueDeclareAsync(queue: "submission-processing", durable: true, exclusive: false, autoDelete: false, arguments: null);
+                await channel.QueueDeclareAsync(queue: "submission-processing", durable: true, exclusive: false, autoDelete: false, arguments: queueArgs);
                 await channel.QueueBindAsync("submission-processing", "SubmissionProcessingExchange", "SubmissionProcessingExchangeKey", null);
                 Console.WriteLine("Connection has been created");
 

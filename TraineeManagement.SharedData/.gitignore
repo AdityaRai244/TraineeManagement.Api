@@ -1,0 +1,44 @@
+## --- Build Results ---
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+
+## --- IDE & Tooling Caches ---
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+days
+docker-compose.yml
+
+## --- Operating System Files ---
+.DS_Store
+Thumbs.db
+
+## --- Secrets & Environment Settings (CRITICAL for APIs) ---
+appsettings.Development.json
+appsettings.Local.json
+appsettings.json
+*.env
+*.pem
+
+## --- Package Manager Artifacts ---
+.nuget/
+*.nuget.props
+*.nuget.targets
+node_modules/
+
+## --- Test and Code Coverage ---
+TestResult*/
+BenchmarkDotNet.Artifacts/
+*.dotCover

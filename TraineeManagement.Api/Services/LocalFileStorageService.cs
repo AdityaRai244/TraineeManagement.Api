@@ -84,12 +84,6 @@ class LocalFileStorageService : IFileStorageService
         }
 
         string ContentType = file.ContentType;
-
-        //  if (!IsValidExtension(extension))
-        // {
-        //     throw new BadRequestException("Invalid Format");
-        // }
-
         string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file.FileName);
         string fileName = $"{fileNameWithoutExtension}_{Guid.NewGuid()}{extension}";
         string filePath = Path.Combine(folderPath, fileName);
@@ -97,11 +91,9 @@ class LocalFileStorageService : IFileStorageService
         await using var stream = new FileStream(filePath, FileMode.Create);
         await file.CopyToAsync(stream);
 
-        using var checkSumStream = file.OpenReadStream();
+        await using var checkSumStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
         using var sha256 = SHA256.Create();
-
         byte[] hashBytes = await sha256.ComputeHashAsync(checkSumStream);
-
         string calculatedCheckSum = Convert.ToHexString(hashBytes);
 
         string? claimValue = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;

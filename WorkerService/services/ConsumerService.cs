@@ -6,17 +6,24 @@ using TraineeManagement.SharedData.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using TraineeManagement.SharedData.Models;
+using System.Net.Http.Json;
+using System.Security.Cryptography;
+
+namespace WorkerService.Services;
 
 public class ConsumerService : BackgroundService
 {
     private readonly IConfiguration _configuration;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly HttpClient _client;
     private IConnection? _connection;
     private IChannel? channel;
-    public ConsumerService(IConfiguration configuration, IServiceScopeFactory scopeFactory)
+
+    public ConsumerService(IConfiguration configuration, IServiceScopeFactory scopeFactory, HttpClient client)
     {
         _configuration = configuration;
         _scopeFactory = scopeFactory;
+        _client = client;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -79,7 +86,7 @@ public class ConsumerService : BackgroundService
                 using (var scope = _scopeFactory.CreateScope())
                 {
                     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    var job = await db.ProcessingJob.FirstOrDefaultAsync(t => t.CorrelationId == payload.CorrelationId);
+                    var job = await db.ProcessingJob.FirstOrDefaultAsync(t => t.MessageId == payload.MessageId, stoppingToken);
                     if (job == null)
                     {
                         await channel.BasicRejectAsync(ea.DeliveryTag, false);
@@ -91,8 +98,6 @@ public class ConsumerService : BackgroundService
                         return;
                     }
 
-
-
                     try
                     {
 
@@ -100,29 +105,29 @@ public class ConsumerService : BackgroundService
                         var SubmissionFile = await db.SubmissionFile
          .FirstOrDefaultAsync(f => f.Id == payload.FileId);
 
-                        var isDuplicate = await db.SubmissionFile
-                      .AnyAsync(f => f.CheckSum == SubmissionFile.CheckSum && f.Id != SubmissionFile.Id);
+                        //     var isDuplicate = await db.SubmissionFile
+                        //   .AnyAsync(f => f.CheckSum == SubmissionFile.CheckSum && f.Id != SubmissionFile.Id);
 
 
-                        if (isDuplicate)
-                        {
-                            Console.WriteLine($"Skipping processing. File with checksum {SubmissionFile.CheckSum} already processed.");
+                        //     if (isDuplicate)
+                        //     {
+                        //         Console.WriteLine($"Skipping processing. File with checksum {SubmissionFile.CheckSum} already processed.");
 
-                            job.Status = JobStatus.Completed;
-                            await db.SaveChangesAsync();
-                            await channel.BasicAckAsync(ea.DeliveryTag, false);
-                            return;
-                        }
+                        //         job.Status = JobStatus.Completed;
+                        //         await db.SaveChangesAsync();
+                        //         await channel.BasicAckAsync(ea.DeliveryTag, false);
+                        //         return;
+                        //     }
 
                         job.Attempts += 1;
                         job.Status = JobStatus.Processing;
-                        await db.SaveChangesAsync();
+                        await db.SaveChangesAsync(stoppingToken);
 
-                        await processMessageAsync(payload, db);
+                        await processMessageAsync(payload, db, stoppingToken);
                         // throw new Exception();
 
                         job.Status = JobStatus.Completed;
-                        await db.SaveChangesAsync();
+                        await db.SaveChangesAsync(stoppingToken);
                         await channel.BasicAckAsync(ea.DeliveryTag, false);
                     }
                     catch (Exception ex)
@@ -130,13 +135,14 @@ public class ConsumerService : BackgroundService
                         if (job.Attempts >= 3)
                         {
                             job.Status = JobStatus.Failed;
-                            await db.SaveChangesAsync();
+                            await db.SaveChangesAsync(stoppingToken);
                             await channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: false);
                         }
                         else
                         {
-                            Console.WriteLine("hii");
-                            await db.SaveChangesAsync();
+                            Console.Write("Entered here");
+                            Console.WriteLine(ex.Message);
+                            await db.SaveChangesAsync(stoppingToken);
                             await channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: true);
                         }
                     }
@@ -160,25 +166,44 @@ public class ConsumerService : BackgroundService
 
     }
 
-    public async Task processMessageAsync(SubmissionProcessingRequested payload, AppDbContext db)
+    public async Task<string> processMessageAsync(SubmissionProcessingRequested payload, AppDbContext db, CancellationToken cancellationToken)
     {
 
-        var submissionFile = await db.SubmissionFile.FirstOrDefaultAsync(t => t.Id == payload.FileId);
+        int fileId = payload.FileId;
+        SubmissionFile submissionFile = await db.SubmissionFile.FirstOrDefaultAsync(t => t.Id == fileId);
 
-        // using var checkSumStream = file.OpenReadStream();
-        // using var sha256 = SHA256.Create();
+        if (submissionFile == null)
+        {
+            Console.WriteLine("File does not there");
+            throw new Exception("File does not exists");
+        }
+        string? basePath = _configuration["FileStorageService:Path"] ?? AppDomain.CurrentDomain.BaseDirectory;
+        string absoluteBasePath = Path.GetFullPath(basePath);
+        string folderPath = Path.Combine(absoluteBasePath, "uploads");
 
-        // byte[] hashBytes = await sha256.ComputeHashAsync(checkSumStream);
+        basePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../TraineeManagement.Api/uploads", submissionFile.StorageName));
+        await using var fileStream = new FileStream(basePath, FileMode.Open, FileAccess.Read);
+        using var sha256 = SHA256.Create();
+        byte[] hashBytes = await sha256.ComputeHashAsync(fileStream);
+        string calculatedCheckSum = Convert.ToHexString(hashBytes);
 
-        // string calculatedCheckSum = Convert.ToHexString(hashBytes);
+        if (calculatedCheckSum == submissionFile.CheckSum)
+        {
 
 
-        Console.WriteLine("Processing");
-        await Task.Delay(5000);
-        Console.WriteLine("Processing done");
-        // payload.Status = JobStatus.Processing;
-        // Console.WriteLine("prcoesssed");
-        // await db.SaveChangesAsync();
+            Console.WriteLine("Processing inside message");
+            using HttpResponseMessage response = await _client.GetAsync("trainees", cancellationToken);
+            response.EnsureSuccessStatusCode();
+            string responseBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine(responseBody);
+            return responseBody;
+        }
+        else
+        {
+            Console.Write("Corrupted fileeee");
+            throw new Exception("Corrupted File");
+        }
+
 
     }
 

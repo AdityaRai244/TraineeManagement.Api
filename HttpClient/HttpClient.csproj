@@ -15,8 +15,8 @@
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
 
-  <ItemGroup>
+  <!-- <ItemGroup>
     <ProjectReference Include="..\TraineeManagement.SharedData\TraineeManagement.SharedData.csproj" />
-  </ItemGroup>
+  </ItemGroup> -->
 
 </Project>

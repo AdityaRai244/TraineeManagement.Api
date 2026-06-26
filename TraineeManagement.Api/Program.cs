@@ -13,7 +13,12 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.OpenApi;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+
 using TraineeManagement.Api.Exceptions;
+using RabbitMQ.Client;                              
+using System;    
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,15 +29,15 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.Converters.Add(
         new JsonStringEnumConverter()
     );
-});;
+}); ;
 
 
 // ---------AUTHENTICATION IN SWAGGER-----------
 
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo 
-    { 
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
         Title = "TraineeManagement.Api",
         Version = "v1"
     });
@@ -56,14 +61,14 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.AddScoped<ITraineeService,TraineeService>();
-builder.Services.AddScoped<IAuthService,AuthService>();
-builder.Services.AddScoped<IMentorService,MentorService>();
-builder.Services.AddScoped<ILearningTaskService,LearningTaskService>();
-builder.Services.AddScoped<ITaskAssignmentService,TaskAssignmentService>();
-builder.Services.AddScoped<ISubmissionService,SubmissionService>();
-builder.Services.AddScoped<IReviewService,ReviewService>();
-builder.Services.AddScoped<IFileStorageService,LocalFileStorageService>();
+builder.Services.AddScoped<ITraineeService, TraineeService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IMentorService, MentorService>();
+builder.Services.AddScoped<ILearningTaskService, LearningTaskService>();
+builder.Services.AddScoped<ITaskAssignmentService, TaskAssignmentService>();
+builder.Services.AddScoped<ISubmissionService, SubmissionService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped(typeof(IRedisService<>), typeof(RedisService<>));
 builder.Services.AddSingleton<ISubmissionProcessingService, SubmissionProcessingService>();
 
@@ -72,12 +77,54 @@ builder.Services.AddSingleton<ISubmissionProcessingService, SubmissionProcessing
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseMySql(connectionString,ServerVersion.AutoDetect(connectionString));
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
 });
 
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+var rabbitSection = builder.Configuration.GetSection("RabbitMQ");
+
+
+builder.Services.AddHealthChecks()
+    .AddMySql(
+        connectionString: builder.Configuration.GetConnectionString("DefaultConnection")!,
+        name: "mysql-db",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: ["database", "mysql"])
+    .AddRedis(
+        redisConnectionString: builder.Configuration.GetConnectionString("Redis")!,
+        name: "redis",
+        failureStatus: HealthStatus.Degraded,
+        tags: ["ready"])
+    .AddRabbitMQ(
+        async sp =>
+        {
+            var factory = new ConnectionFactory
+            {
+               HostName = rabbitSection["Host"],
+                Port = int.Parse(rabbitSection["Port"] ?? "5672"),
+                VirtualHost = rabbitSection["VirtualHost"] ?? "/",
+                UserName = rabbitSection["Username"], 
+                Password = rabbitSection["Password"],
+            };
+            return await factory.CreateConnectionAsync();
+        },
+        name: "rabbitmq",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: new[] { "mq", "rabbit" }
+    )
+    .AddUrlGroup(
+        uri: new Uri("http://localhost:5287/api/health"),
+        name : "TraineeDirectory.Api",
+        failureStatus : HealthStatus.Unhealthy,
+        timeout : TimeSpan.FromSeconds(10)
+    );
+
+
+
+
 
 
 // ---------CORS-------------------
@@ -87,7 +134,7 @@ var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins,
-                      policy  =>
+                      policy =>
                       {
                           policy.WithOrigins("http://localhost:3000",
                                               "http://localhost:5173")
@@ -139,7 +186,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-    options.EnablePersistAuthorization(); 
+        options.EnablePersistAuthorization();
     });
 
     // app.UseExceptionHandler(options =>
@@ -163,12 +210,37 @@ if (app.Environment.IsDevelopment())
 
 }
 
+
+
+// Readiness — checks everything needed to serve requests
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = _ => true,
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description
+            })
+        };
+
+        await context.Response.WriteAsJsonAsync(result);
+
+    }
+});
+
 // -----------SEED USER ----------
 
 // using(var scope = app.Services.CreateAsyncScope())
 // {
 //    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
- 
+
 //    if (!db.Users.Any())
 //    {
 //       var admin = new User

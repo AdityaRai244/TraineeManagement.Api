@@ -15,19 +15,19 @@ namespace TraineeManagement.Api.Controllers;
 public class SubmissionController : ControllerBase
 {
 
-    private readonly ISubmissionService submissionService;
-    private readonly IFileStorageService fileStorageService;
-    private readonly IConfiguration config;
-    private readonly AppDbContext database;
+    private readonly ISubmissionService _submissionService;
+    private readonly IFileStorageService _fileStorageService;
+    private readonly IConfiguration _config;
+    private readonly AppDbContext _database;
 
-    private readonly ILogger<SubmissionController> logger;
+    private readonly ILogger<SubmissionController> _logger;
     public SubmissionController(ISubmissionService submissionService, AppDbContext database, IFileStorageService fileStorageService, ILogger<SubmissionController> logger, IConfiguration config)
     {
-        this.submissionService = submissionService;
-        this.database = database;
-        this.fileStorageService = fileStorageService;
-        this.logger = logger;
-        this.config = config;
+        _submissionService = submissionService;
+        _database = database;
+        _fileStorageService = fileStorageService;
+        _logger = logger;
+        _config = config;
 
     }
 
@@ -38,12 +38,12 @@ public class SubmissionController : ControllerBase
 
         if (pageNumber <= 0 || pageSize <= 0)
         {
-            logger.LogError("Invalid Paramters");
+            _logger.LogError("Invalid Paramters");
             return BadRequest($"{nameof(pageNumber)} and {nameof(pageSize)} size must be greater than 0.");
         }
 
-        var submissions = await submissionService.GetAllSubmissions(status, pageNumber, pageSize);
-        logger.LogInformation("Submissions fetched from service successfully");
+        var submissions = await _submissionService.GetAllSubmissions(status, pageNumber, pageSize);
+        _logger.LogInformation("Submissions fetched from service successfully");
         return Ok(submissions);
     }
 
@@ -52,8 +52,8 @@ public class SubmissionController : ControllerBase
     public async Task<ActionResult> GetSummary([FromRoute] int submissionId)
     {
 
-        var summary = await submissionService.GetSubmissionSummaryById(submissionId);
-        logger.LogInformation("Summary fetched from service successfully");
+        var summary = await _submissionService.GetSubmissionSummaryById(submissionId);
+        _logger.LogInformation("Summary fetched from service successfully");
         return Ok(summary);
     }
 
@@ -62,13 +62,13 @@ public class SubmissionController : ControllerBase
     public async Task<ActionResult> GetById(int id)
     {
 
-        var submission = await submissionService.GetSubmissionById(id);
+        var submission = await _submissionService.GetSubmissionById(id);
         if (submission == null)
         {
-            logger.LogError("Submission with Id {id} Not found", id);
+            _logger.LogError("Submission with Id {id} Not found", id);
             return NotFound(new { message = $"Submission with {id} not found" });
         }
-        logger.LogInformation("Submission with Id {id} Fetched from service Successfully", id);
+        _logger.LogInformation("Submission with Id {id} Fetched from service Successfully", id);
         return Ok(submission);
 
     }
@@ -79,8 +79,8 @@ public class SubmissionController : ControllerBase
     public async Task<ActionResult> Post([FromBody] CreateSubmissionDTO request)
     {
 
-        var submission = await submissionService.CreateSubmission(request);
-        logger.LogInformation("Submission Created From Service Successfully");
+        var submission = await _submissionService.CreateSubmission(request);
+        _logger.LogInformation("Submission Created From Service Successfully");
         return CreatedAtAction(nameof(GetById), new { id = submission.Id }, submission);
 
     }
@@ -91,7 +91,7 @@ public class SubmissionController : ControllerBase
     public async Task<IActionResult> UploadFile(int submissionId, IFormFile file)
     {
       
-        var result = await fileStorageService.SaveAsync(submissionId, file);
+        var result = await _fileStorageService.SaveAsync(submissionId, file);
         Console.WriteLine(result);
         return Accepted(result);
     }
@@ -103,12 +103,12 @@ public class SubmissionController : ControllerBase
     public async Task<IActionResult> DownloadFile(int id)
     {
 
-        var metaData = await database.SubmissionFile.FindAsync(id);
+        var metaData = await _database.SubmissionFile.FindAsync(id);
         if (metaData == null)
         {
             throw new NotFoundException("File does not exists");
         }
-        var stream = await fileStorageService.OpenReadAsync(metaData.StorageName);
+        var stream = await _fileStorageService.OpenReadAsync(metaData.StorageName);
         return File(stream, metaData.ContentType, metaData.OriginalFileName);
 
 
@@ -120,14 +120,14 @@ public class SubmissionController : ControllerBase
     public async Task<IActionResult> DeleteFile(int id)
     {
 
-        var metaData = await database.SubmissionFile.FindAsync(id);
+        var metaData = await _database.SubmissionFile.FindAsync(id);
         if (metaData == null)
         {
             throw new NotFoundException("File does not exists");
         }
-        await fileStorageService.DeleteAsync(metaData.StorageName);
-        database.SubmissionFile.Remove(metaData);
-        await database.SaveChangesAsync();
+        await _fileStorageService.DeleteAsync(metaData.StorageName);
+        _database.SubmissionFile.Remove(metaData);
+        await _database.SaveChangesAsync();
         return NoContent();
 
 

@@ -13,11 +13,11 @@ namespace TraineeManagement.Api.Controllers;
 public class ReviewController : ControllerBase
 {
 
-    private readonly IReviewService reviewService;
+    private readonly IReviewService _reviewService;
     private readonly ILogger<ReviewController> _logger;
     public ReviewController(IReviewService reviewService, ILogger<ReviewController> logger)
     {
-        this.reviewService = reviewService;
+        _reviewService = reviewService;
         _logger = logger;
 
     }
@@ -33,7 +33,7 @@ public class ReviewController : ControllerBase
             return BadRequest($"{nameof(pageNumber)} and {nameof(pageSize)} size must be greater than 0.");
         }
 
-        var reviews = await reviewService.GetAllReviews(status, pageNumber, pageSize);
+        var reviews = await _reviewService.GetAllReviews(status, pageNumber, pageSize);
         _logger.LogInformation("Reviews fetched from service successfully");
         return Ok(reviews);
     }
@@ -43,7 +43,7 @@ public class ReviewController : ControllerBase
     public async Task<ActionResult> GetById(int id)
     {
 
-        var review = await reviewService.GetReviewById(id);
+        var review = await _reviewService.GetReviewById(id);
         if (review == null)
         {
             _logger.LogError("Review with Id {id} Not found", id);
@@ -60,7 +60,7 @@ public class ReviewController : ControllerBase
     public async Task<ActionResult> Post([FromBody] CreateReviewDTO request)
     {
 
-        var review = await reviewService.CreateReview(request);
+        var review = await _reviewService.CreateReview(request);
         _logger.LogInformation("Review Created From Service Successfully");
         return CreatedAtAction(nameof(GetById), new { id = review.Id }, review);
 

@@ -7,10 +7,12 @@ using TraineeManagement.SharedData.Models;
 public class SubmissionProcessingService : ISubmissionProcessingService
 {
     private readonly IConfiguration _configuration;
+    private readonly ILogger<SubmissionProcessingService> _logger;
 
-    public SubmissionProcessingService(IConfiguration configuration)
+    public SubmissionProcessingService(IConfiguration configuration, ILogger<SubmissionProcessingService> logger)
     {
         _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task PostSubmissionProcessingAsync(SubmissionProcessingRequested request)
@@ -40,7 +42,7 @@ public class SubmissionProcessingService : ISubmissionProcessingService
                 await channel.ExchangeDeclareAsync("SubmissionProcessingExchange", ExchangeType.Direct);
                 await channel.QueueDeclareAsync(queue: "submission-processing", durable: true, exclusive: false, autoDelete: false, arguments: queueArgs);
                 await channel.QueueBindAsync("submission-processing", "SubmissionProcessingExchange", "SubmissionProcessingExchangeKey", null);
-                Console.WriteLine("Connection has been created");
+                _logger.LogInformation("Connection has been created");
 
                 var message = JsonSerializer.Serialize(request);
                 var body = Encoding.UTF8.GetBytes(message);
@@ -57,7 +59,7 @@ public class SubmissionProcessingService : ISubmissionProcessingService
                     basicProperties: properties,
                     body: body
                 );
-                Console.WriteLine($"{message} has been sent");
+                _logger.LogInformation($"{message} has been published");
             }
 
 
@@ -65,7 +67,7 @@ public class SubmissionProcessingService : ISubmissionProcessingService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Could not connect to the rabbitmq: {ex.Message}");
+            _logger.LogError($"Something went wrong in rabbitmq: {ex.Message}");
 
         }
 

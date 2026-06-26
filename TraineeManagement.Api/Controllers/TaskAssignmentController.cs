@@ -13,11 +13,11 @@ namespace TraineeManagement.Api.Controllers;
 public class TaskAssignmentController : ControllerBase
 {
 
-    private readonly ITaskAssignmentService taskAssignmentService;
+    private readonly ITaskAssignmentService _taskAssignmentService;
     private readonly ILogger<TaskAssignmentController> _logger;
     public TaskAssignmentController(ITaskAssignmentService learningTask, ILogger<TaskAssignmentController> logger)
     {
-        this.taskAssignmentService = learningTask;
+        _taskAssignmentService = learningTask;
         _logger = logger;
 
     }
@@ -33,7 +33,7 @@ public class TaskAssignmentController : ControllerBase
             return BadRequest($"{nameof(pageNumber)} and {nameof(pageSize)} size must be greater than 0.");
         }
 
-        var taskAssignments = await taskAssignmentService.GetAllTaskAssignment(status, search, pageNumber, pageSize);
+        var taskAssignments = await _taskAssignmentService.GetAllTaskAssignment(status, search, pageNumber, pageSize);
         _logger.LogInformation("Task Assignments fetched from service successfully");
         return Ok(taskAssignments);
     }
@@ -43,7 +43,7 @@ public class TaskAssignmentController : ControllerBase
     public async Task<ActionResult> GetById(int id)
     {
 
-        var taskAssignment = await taskAssignmentService.GetTaskAssignmentById(id);
+        var taskAssignment = await _taskAssignmentService.GetTaskAssignmentById(id);
         if (taskAssignment == null)
         {
             _logger.LogError("Task Assignment with Id {id} Not found", id);
@@ -60,7 +60,7 @@ public class TaskAssignmentController : ControllerBase
     public async Task<ActionResult> Post([FromBody] CreateTaskAssignmentDTO request)
     {
 
-        var taskAssignment = await taskAssignmentService.CreateTaskAssignment(request);
+        var taskAssignment = await _taskAssignmentService.CreateTaskAssignment(request);
         _logger.LogInformation("Task Assignment Created From Service Successfully");
         return CreatedAtAction(nameof(GetById), new { id = taskAssignment.Id }, taskAssignment);
 
@@ -70,7 +70,7 @@ public class TaskAssignmentController : ControllerBase
     [Authorize]
     public async Task<ActionResult> Put(int id, [FromBody] UpdateTaskAssignmentDTO request)
     {
-        var taskAssignment = await taskAssignmentService.UpdateTaskAssignment(id, request);
+        var taskAssignment = await _taskAssignmentService.UpdateTaskAssignment(id, request);
         if (taskAssignment == null)
         {
             _logger.LogError("Task Assignment with Id {id} Not found", id);

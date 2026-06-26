@@ -13,11 +13,11 @@ namespace TraineeManagement.Api.Controllers;
 public class LearningTaskController : ControllerBase
 {
     
-    private readonly ILearningTaskService learningTask;
+    private readonly ILearningTaskService _learningTask;
     private readonly ILogger<LearningTaskController> _logger;
     public LearningTaskController(ILearningTaskService learningTask, ILogger<LearningTaskController> logger)
     {
-        this.learningTask = learningTask;
+        _learningTask = learningTask;
         _logger = logger;
 
     }
@@ -33,7 +33,7 @@ public class LearningTaskController : ControllerBase
 		    return BadRequest($"{nameof(pageNumber)} and {nameof(pageSize)} size must be greater than 0.");
         }
 
-        var tasks = await learningTask.GetAllTasks(status,search,pageNumber,pageSize);
+        var tasks = await _learningTask.GetAllTasks(status,search,pageNumber,pageSize);
         _logger.LogInformation("Tasks fetched from service successfully");
         return Ok(tasks);
     }
@@ -43,7 +43,7 @@ public class LearningTaskController : ControllerBase
     public async Task<ActionResult> GetById(int id)
     {
 
-        var task = await learningTask.GetTaskById(id);
+        var task = await _learningTask.GetTaskById(id);
         if(task == null)
         {
             _logger.LogError("Task with Id {id} Not found",id);
@@ -60,7 +60,7 @@ public class LearningTaskController : ControllerBase
     public async Task<ActionResult> Post([FromBody] CreateLearningTaskDTO request)
     {
 
-        var task = await learningTask.CreateTask(request);
+        var task = await _learningTask.CreateTask(request);
         _logger.LogInformation("Task Created From Service Successfully");
         return CreatedAtAction(nameof(GetById), new {id = task.Id}, task);
 
@@ -70,7 +70,7 @@ public class LearningTaskController : ControllerBase
     [Authorize]
     public async Task<ActionResult> Put(int id, [FromBody] UpdateLearningTaskDTO request)
     {
-        var task = await learningTask.UpdateTask(id, request);
+        var task = await _learningTask.UpdateTask(id, request);
         if(task == null)
         {
             _logger.LogError("Task with Id {id} Not found",id);
@@ -85,7 +85,7 @@ public class LearningTaskController : ControllerBase
     [Authorize]
     public async Task<ActionResult> Delete(int id)
     {
-        var success = await learningTask.DeleteTask(id);
+        var success = await _learningTask.DeleteTask(id);
         if (!success)
         {
             _logger.LogError("Task with Id {id} Not found",id);

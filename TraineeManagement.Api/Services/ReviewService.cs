@@ -9,18 +9,18 @@ using TraineeManagement.Api.Exceptions;
 public class ReviewService : IReviewService
 {
 
-    private readonly AppDbContext database;
+    private readonly AppDbContext _database;
     private readonly ILogger<ReviewService> _logger;
 
     public ReviewService(AppDbContext database, ILogger<ReviewService> logger)
     {
-        this.database = database;
+        _database = database;
         _logger = logger;
     }
 
     public async Task<IEnumerable<ReviewResponseDTO>> GetAllReviews(ReviewStatus? status, int pageNumber = 1, int pageSize = 10)
     {
-        var query = database.Reviews.AsQueryable();
+        var query = _database.Reviews.AsQueryable();
 
         if (status.HasValue)
         {
@@ -39,7 +39,7 @@ public class ReviewService : IReviewService
     public async Task<ReviewResponseDTO?> GetReviewById(int id)
     {
 
-        var Review = await database.Reviews.FindAsync(id);
+        var Review = await _database.Reviews.FindAsync(id);
         if (Review == null)
         {
             throw new NotFoundException("Review");
@@ -52,13 +52,13 @@ public class ReviewService : IReviewService
     {
 
 
-        var submissionExists = await database.Submission.FirstOrDefaultAsync(t => t.Id == request.SubmissionId);
+        var submissionExists = await _database.Submission.FirstOrDefaultAsync(t => t.Id == request.SubmissionId);
         if (submissionExists == null)
         {
             throw new NotFoundException("Submission");
         }
 
-        var mentorExists = await database.Mentors.FirstOrDefaultAsync(t => t.Id == request.MentorId);
+        var mentorExists = await _database.Mentors.FirstOrDefaultAsync(t => t.Id == request.MentorId);
         if (mentorExists == null)
         {
             throw new NotFoundException("Mentor");
@@ -75,9 +75,9 @@ public class ReviewService : IReviewService
 
         };
 
-        await database.Reviews.AddAsync(review);
+        await _database.Reviews.AddAsync(review);
 
-        await database.SaveChangesAsync();
+        await _database.SaveChangesAsync();
         _logger.LogInformation("Review Created Succesfully");
         return MapResponse(review);
 

@@ -11,23 +11,19 @@ public class LearningTaskService : ILearningTaskService
 
 
 
-    private readonly AppDbContext database;
+    private readonly AppDbContext _database;
     private readonly ILogger<AuthService> _logger;
 
     public LearningTaskService(AppDbContext database, ILogger<AuthService> logger)
     {
-        this.database = database;
+        _database = database;
         _logger = logger;
     }
 
     public async Task<IEnumerable<LearningTaskResponseDTO>> GetAllTasks(LearningTaskStatus? status, string? search = null, int pageNumber = 1, int pageSize = 10)
     {
-        var query = database.LearningTasks.AsQueryable();
-        // Console.Write("Start");
-        // Console.Write(status);
-        // Console.Write(status.Value);
-        // Console.Write("End");
-
+        var query = _database.LearningTasks.AsQueryable();
+       
         if (!string.IsNullOrWhiteSpace(search))
         {
             search = search.ToLower();
@@ -59,7 +55,7 @@ public class LearningTaskService : ILearningTaskService
     public async Task<LearningTaskResponseDTO?> GetTaskById(int id)
     {
 
-        var task = await database.LearningTasks.FindAsync(id);
+        var task = await _database.LearningTasks.FindAsync(id);
         if (task == null)
         {
             throw new NotFoundException("Task");
@@ -83,9 +79,9 @@ public class LearningTaskService : ILearningTaskService
 
         };
 
-        await database.LearningTasks.AddAsync(task);
+        await _database.LearningTasks.AddAsync(task);
 
-        await database.SaveChangesAsync();
+        await _database.SaveChangesAsync();
         _logger.LogInformation("Task Created Succesfully");
         return MapResponse(task);
 
@@ -94,7 +90,7 @@ public class LearningTaskService : ILearningTaskService
     public async Task<LearningTaskResponseDTO?> UpdateTask(int id, UpdateLearningTaskDTO request)
     {
 
-        var task = await database.LearningTasks.FindAsync(id);
+        var task = await _database.LearningTasks.FindAsync(id);
 
         if (task == null)
         {
@@ -107,7 +103,7 @@ public class LearningTaskService : ILearningTaskService
         task.DueDate = request.DueDate;
         task.UpdatedDate = DateTime.UtcNow;
 
-        await database.SaveChangesAsync();
+        await _database.SaveChangesAsync();
         _logger.LogInformation("Update task Request Successful for Id No : {id}", id);
 
         return MapResponse(task);
@@ -116,13 +112,13 @@ public class LearningTaskService : ILearningTaskService
 
     public async Task<bool> DeleteTask(int id)
     {
-        var task = await database.LearningTasks.FindAsync(id);
+        var task = await _database.LearningTasks.FindAsync(id);
         if (task == null)
         {
             throw new NotFoundException("Task");
         }
-        database.LearningTasks.Remove(task);
-        await database.SaveChangesAsync();
+        _database.LearningTasks.Remove(task);
+        await _database.SaveChangesAsync();
         _logger.LogInformation("Delete Task Successful for Id No : {id}", id);
         return true;
     }

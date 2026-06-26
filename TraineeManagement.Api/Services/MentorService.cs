@@ -11,18 +11,18 @@ public class MentorService : IMentorService
 
 
 
-    private readonly AppDbContext database;
+    private readonly AppDbContext _database;
     private readonly ILogger<AuthService> _logger;
 
     public MentorService(AppDbContext database, ILogger<AuthService> logger)
     {
-        this.database = database;
+        _database = database;
         _logger = logger;
     }
 
     public async Task<IEnumerable<MentorResponseDTO>> GetAllMentors(MentorStatus? status, string? search = null, int pageNumber = 1, int pageSize = 10)
     {
-        var query = database.Mentors.AsQueryable();
+        var query = _database.Mentors.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -38,18 +38,6 @@ public class MentorService : IMentorService
             _logger.LogInformation("Implemented Search Filtering");
         }
 
-
-
-        // if (!string.IsNullOrWhiteSpace(status.ToString()))
-        // {
-        //     if (Enum.TryParse<MentorStatus>(status, out MentorStatus parsedStatus))
-        //     {
-                // query = query.Where(t => t.Status == parsedStatus);
-                // _logger.LogInformation("Implemented Status Filtering");
-
-        //     }
-        // }
-
         if (status.HasValue)
         {
             query = query.Where(t => t.Status == status.Value);
@@ -59,16 +47,14 @@ public class MentorService : IMentorService
         var mentors = await query.AsNoTracking().Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
         _logger.LogInformation("Implemented Pagination");
 
-        // var mentors = await query.ToListAsync();
         return mentors.Select(MapResponse);
 
     }
 
     public async Task<MentorResponseDTO?> GetMentorById(int id)
     {
-        // var mentor = await database.Mentors.Include(m => m.TaskAssignments).Include(m => m.Reviews).FirstOrDefaultAsync(c => c.Id == id);
 
-        var mentor = await database.Mentors.FindAsync(id);
+        var mentor = await _database.Mentors.FindAsync(id);
         if (mentor == null)
         {
             throw new NotFoundException("Mentor");
@@ -92,9 +78,9 @@ public class MentorService : IMentorService
 
         };
 
-        await database.Mentors.AddAsync(mentor);
+        await _database.Mentors.AddAsync(mentor);
 
-        await database.SaveChangesAsync();
+        await _database.SaveChangesAsync();
         _logger.LogInformation("Mentor Created Succesfully");
         return MapResponse(mentor);
 
@@ -103,7 +89,7 @@ public class MentorService : IMentorService
     public async Task<MentorResponseDTO?> UpdateMentor(int id, UpdateMentorDTO request)
     {
 
-        var mentor = await database.Mentors.FindAsync(id);
+        var mentor = await _database.Mentors.FindAsync(id);
 
         if (mentor == null)
         {
@@ -116,7 +102,7 @@ public class MentorService : IMentorService
         mentor.Expertise = request.Expertise;
         mentor.UpdatedDate = DateTime.UtcNow;
 
-        await database.SaveChangesAsync();
+        await _database.SaveChangesAsync();
         _logger.LogInformation("Update Mentor Request Successful for Id No : {id}", id);
 
         return MapResponse(mentor);
@@ -125,14 +111,14 @@ public class MentorService : IMentorService
 
     public async Task<bool> DeleteMentor(int id)
     {
-        var mentor = await database.Mentors.FindAsync(id);
+        var mentor = await _database.Mentors.FindAsync(id);
         if (mentor == null)
         {
             throw new NotFoundException("Mentor");
         }
         ;
-        database.Mentors.Remove(mentor);
-        await database.SaveChangesAsync();
+        _database.Mentors.Remove(mentor);
+        await _database.SaveChangesAsync();
         _logger.LogInformation("Delete Mentor Successful for Id No : {id}", id);
         return true;
     }

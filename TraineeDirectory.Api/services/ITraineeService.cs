@@ -4,7 +4,7 @@ using System.Text.Json;
 public interface ITraineeService
 {
     
-    string GetUserDataAsync();
+    string GetUserDataAsync(int id);
 
 
 

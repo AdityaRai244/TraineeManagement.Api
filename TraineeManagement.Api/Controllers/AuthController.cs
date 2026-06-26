@@ -11,12 +11,12 @@ namespace TraineeManagement.Api.Controllers;
 public class LoginController : ControllerBase
 {
 
-    private readonly IAuthService authService;
+    private readonly IAuthService _authService;
     private readonly ILogger<TraineeController> _logger;
 
     public LoginController(IAuthService authService, ILogger<TraineeController> logger)
     {
-        this.authService = authService;
+        _authService = authService;
         _logger = logger;
     }
     
@@ -24,7 +24,7 @@ public class LoginController : ControllerBase
     public async Task<ActionResult<LoginResponseDTO>> Login(LoginRequestDTO request)
     {
         
-        var response = await authService.LoginUser(request);
+        var response = await _authService.LoginUser(request);
         if(response == null)
         {
             _logger.LogError("Invalid Username Or Password");

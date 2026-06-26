@@ -14,14 +14,14 @@ using TraineeManagement.Api.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly AppDbContext database;
+    private readonly AppDbContext _database;
     private readonly IConfiguration _config;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(AppDbContext database, IConfiguration config,  ILogger<AuthService> logger)
     {
-        this.database = database;
-        this._config = config;
+        _database = database;
+        _config = config;
         _logger = logger;
     }
 
@@ -30,7 +30,7 @@ public class AuthService : IAuthService
         string username = request.Username;
         string password = request.Password;
 
-        User? user = database.Users.SingleOrDefault(u => u.Username == username);
+        User? user = _database.Users.SingleOrDefault(u => u.Username == username);
 
         if (user == null)
         {

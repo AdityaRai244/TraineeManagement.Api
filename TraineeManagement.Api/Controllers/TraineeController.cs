@@ -11,11 +11,11 @@ namespace TraineeManagement.Api.Controllers;
 public class TraineeController : ControllerBase
 {
 
-    private readonly ITraineeService traineeService;
+    private readonly ITraineeService _traineeService;
     private readonly ILogger<TraineeController> _logger;
     public TraineeController(ITraineeService traineeService, ILogger<TraineeController> logger)
     {
-        this.traineeService = traineeService;
+        _traineeService = traineeService;
         _logger = logger;
 
     }
@@ -31,7 +31,7 @@ public class TraineeController : ControllerBase
 		    return BadRequest($"{nameof(pageNumber)} and {nameof(pageSize)} size must be greater than 0.");
         }
 
-        var trainees = await traineeService.GetAllTrainees(status,search,pageNumber,pageSize);
+        var trainees = await _traineeService.GetAllTrainees(status,search,pageNumber,pageSize);
         _logger.LogInformation("Trainees fetched from service successfully");
         // return Ok(new
         // {
@@ -49,7 +49,7 @@ public class TraineeController : ControllerBase
     public async Task<ActionResult> GetById(int id)
     {
 
-        var trainee = await traineeService.GetTraineeById(id);
+        var trainee = await _traineeService.GetTraineeById(id);
         if(trainee == null)
         {
             _logger.LogError("Trainee with Id {id} Not found",id);
@@ -66,7 +66,7 @@ public class TraineeController : ControllerBase
     public async Task<ActionResult> Post([FromBody] CreateTraineeRequestDTO request)
     {
 
-        var trainee = await traineeService.CreateTrainee(request);
+        var trainee = await _traineeService.CreateTrainee(request);
         _logger.LogInformation("Trainee Created From Service Successfully");
         return CreatedAtAction(nameof(GetById), new {id =trainee.Id}, trainee);
 
@@ -76,7 +76,7 @@ public class TraineeController : ControllerBase
     [Authorize]
     public async Task<ActionResult> Put(int id, [FromBody] UpdateTraineeRequestDTO request)
     {
-        var trainee = await traineeService.UpdateTrainee(id, request);
+        var trainee = await _traineeService.UpdateTrainee(id, request);
         if(trainee == null)
         {
             _logger.LogError("Trainee with Id {id} Not found",id);
@@ -91,7 +91,7 @@ public class TraineeController : ControllerBase
     [Authorize]
     public async Task<ActionResult> Delete(int id)
     {
-        var success = await traineeService.DeleteTrainee(id);
+        var success = await _traineeService.DeleteTrainee(id);
         if (!success)
         {
             _logger.LogError("Trainee with Id {id} Not found",id);

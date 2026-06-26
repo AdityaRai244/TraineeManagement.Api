@@ -9,20 +9,20 @@ using TraineeManagement.Api.Exceptions;
 public class SubmissionService : ISubmissionService
 {
 
-    private readonly AppDbContext database;
+    private readonly AppDbContext _database;
     private readonly ILogger<SubmissionService> _logger;
     private readonly IRedisService<SubmissionSummaryDTO> _redisCache;
 
     public SubmissionService(IRedisService<SubmissionSummaryDTO> redisCache, AppDbContext database, ILogger<SubmissionService> logger)
     {
-        this.database = database;
+        _database = database;
         _logger = logger;
         _redisCache = redisCache;
     }
 
     public async Task<IEnumerable<SubmissionResponseDTO>> GetAllSubmissions(SubmissionStatus? status, int pageNumber = 1, int pageSize = 10)
     {
-        var query = database.Submission.AsQueryable();
+        var query = _database.Submission.AsQueryable();
 
         if (status.HasValue)
         {
@@ -41,7 +41,7 @@ public class SubmissionService : ISubmissionService
     public async Task<SubmissionResponseDTO?> GetSubmissionById(int id)
     {
 
-        var Submission = await database.Submission.FindAsync(id);
+        var Submission = await _database.Submission.FindAsync(id);
         if (Submission == null)
         {
             throw new NotFoundException("Submission");
@@ -53,7 +53,7 @@ public class SubmissionService : ISubmissionService
     public async Task<SubmissionResponseDTO> CreateSubmission(CreateSubmissionDTO request)
     {
 
-        var taskAssignmentExists = await database.TaskAssignment.FirstOrDefaultAsync(t => t.Id == request.TaskAssignmentId);
+        var taskAssignmentExists = await _database.TaskAssignment.FirstOrDefaultAsync(t => t.Id == request.TaskAssignmentId);
         if (taskAssignmentExists == null)
         {
             throw new NotFoundException("TaskAssignment");
@@ -69,9 +69,9 @@ public class SubmissionService : ISubmissionService
 
         };
 
-        await database.Submission.AddAsync(submission);
+        await _database.Submission.AddAsync(submission);
 
-        await database.SaveChangesAsync();
+        await _database.SaveChangesAsync();
         _logger.LogInformation("TaskAssignment Created Succesfully");
         return MapResponse(submission);
 
@@ -87,7 +87,7 @@ public class SubmissionService : ISubmissionService
             _logger.LogInformation("Cache HIT for trainee {Id}", submissionId);
             return summary;
         }
-        Submission Submission = await database.Submission.FindAsync(submissionId);
+        Submission Submission = await _database.Submission.FindAsync(submissionId);
         if (Submission == null)
         {
             throw new NotFoundException("Submission");

@@ -14,19 +14,21 @@ class LocalFileStorageService : IFileStorageService
 {
 
     private readonly IConfiguration _config;
-    private readonly AppDbContext database;
+    private readonly AppDbContext _database;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly ISubmissionProcessingService submissionProcessingService;
+    private readonly ILogger<LocalFileStorageService> _logger;
+    private readonly ISubmissionProcessingService _submissionProcessingService;
 
 
 
 
-    public LocalFileStorageService(IConfiguration config, AppDbContext database, IHttpContextAccessor httpContextAccessor, ISubmissionProcessingService submissionProcessingService)
+    public LocalFileStorageService(IConfiguration config, AppDbContext database, IHttpContextAccessor httpContextAccessor, ILogger<LocalFileStorageService> logger, ISubmissionProcessingService submissionProcessingService)
     {
-        this.database = database;
-        this._config = config;
-        this._httpContextAccessor = httpContextAccessor;
-        this.submissionProcessingService = submissionProcessingService;
+        _database = database;
+        _config = config;
+        _httpContextAccessor = httpContextAccessor;
+        _submissionProcessingService = submissionProcessingService;
+        _logger = logger;
     }
 
 
@@ -51,6 +53,7 @@ class LocalFileStorageService : IFileStorageService
 
         if (file == null || file.Length == 0)
         {
+            _logger.LogError("No file uploaded");
             throw new BadRequestException("No File Uploaded");
         }
 
@@ -58,6 +61,7 @@ class LocalFileStorageService : IFileStorageService
 
         if (!IsValidExtension(extension))
         {
+            _logger.LogError("Invalid file extension");
             throw new BadRequestException("Invalid Format");
         }
 
@@ -67,11 +71,13 @@ class LocalFileStorageService : IFileStorageService
 
         if (!long.TryParse(maxSize, out long maxSizeBytes))
         {
+            _logger.LogError("Max size parsing failed");
             throw new BadRequestException("Invalid Max Size");
         }
         if (file.Length > maxSizeBytes)
         {
-            throw new BadRequestException("File Too Big");
+            _logger.LogError("Uploaded file is too big.");
+            throw new BadRequestException("Uploaded file is too big.");
         }
 
 
@@ -113,8 +119,8 @@ class LocalFileStorageService : IFileStorageService
                 CreatedDate = DateTime.UtcNow,
                 UpdatedDate = DateTime.UtcNow
             };
-            await database.SubmissionFile.AddAsync(submissionFile);
-            await database.SaveChangesAsync();
+            await _database.SubmissionFile.AddAsync(submissionFile);
+            await _database.SaveChangesAsync();
 
             var data = new SubmissionProcessingRequested
             {
@@ -134,17 +140,17 @@ class LocalFileStorageService : IFileStorageService
                 StartedAt = DateTime.Now
             };
 
-            await database.ProcessingJob.AddAsync(processingJobData);
-            await database.SaveChangesAsync();
+            await _database.ProcessingJob.AddAsync(processingJobData);
+            await _database.SaveChangesAsync();
 
 
-            await submissionProcessingService.PostSubmissionProcessingAsync(data);
+            await _submissionProcessingService.PostSubmissionProcessingAsync(data);
 
             return $"/uploads/{fileName}";
         }
         else
         {
-            Console.WriteLine("User ID claim is missing or not a valid integer.");
+            _logger.LogError("User ID claim is missing or not a valid integer.");
             throw new UnauthorizedAccessException("Unauthorized user");
         }
 
@@ -178,9 +184,10 @@ class LocalFileStorageService : IFileStorageService
 
         if (File.Exists(filePath))
         {
+            _logger.LogInformation("File deleted successfully");
             File.Delete(filePath);
         }
-
+        
         return Task.CompletedTask;
 
 

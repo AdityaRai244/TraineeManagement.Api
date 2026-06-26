@@ -13,16 +13,13 @@ namespace TraineeManagement.Api.Controllers;
 public class MentorController : ControllerBase
 {
     
-    private readonly IMentorService mentorService;
-    // private readonly IRedisService<Mentor> redisService;
+    private readonly IMentorService _mentorService;
 
     private readonly ILogger<MentorController> _logger;
     public MentorController(
-        // IRedisService<Mentor> redisService,
         IMentorService mentorService, ILogger<MentorController> logger)
     {
-        // this.redisService = redisService;
-        this.mentorService = mentorService;
+        _mentorService = mentorService;
         _logger = logger;
 
     }
@@ -38,7 +35,7 @@ public class MentorController : ControllerBase
 		    return BadRequest($"{nameof(pageNumber)} and {nameof(pageSize)} size must be greater than 0.");
         }
 
-        var mentors = await mentorService.GetAllMentors(status,search,pageNumber,pageSize);
+        var mentors = await _mentorService.GetAllMentors(status,search,pageNumber,pageSize);
         _logger.LogInformation("Mentors fetched from service successfully");
         return Ok(mentors);
     }
@@ -48,7 +45,7 @@ public class MentorController : ControllerBase
     public async Task<ActionResult> GetById(int id)
     {
 
-        var mentor = await mentorService.GetMentorById(id);
+        var mentor = await _mentorService.GetMentorById(id);
         if(mentor == null)
         {
             _logger.LogError("Mentor with Id {id} Not found",id);
@@ -82,7 +79,7 @@ public class MentorController : ControllerBase
     public async Task<ActionResult> Post([FromBody] CreateMentorDTO request)
     {
 
-        var mentor = await mentorService.CreateMentor(request);
+        var mentor = await _mentorService.CreateMentor(request);
         _logger.LogInformation("Mentor Created From Service Successfully");
         return CreatedAtAction(nameof(GetById), new {id = mentor.Id}, mentor);
 
@@ -92,7 +89,7 @@ public class MentorController : ControllerBase
     [Authorize]
     public async Task<ActionResult> Put(int id, [FromBody] UpdateMentorDTO request)
     {
-        var mentor = await mentorService.UpdateMentor(id, request);
+        var mentor = await _mentorService.UpdateMentor(id, request);
         if(mentor == null)
         {
             _logger.LogError("Mentor with Id {id} Not found",id);
@@ -107,7 +104,7 @@ public class MentorController : ControllerBase
     [Authorize]
     public async Task<ActionResult> Delete(int id)
     {
-        var success = await mentorService.DeleteMentor(id);
+        var success = await _mentorService.DeleteMentor(id);
         if (!success)
         {
             _logger.LogError("Mentor with Id {id} Not found",id);

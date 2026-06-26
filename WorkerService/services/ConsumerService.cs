@@ -15,15 +15,18 @@ public class ConsumerService : BackgroundService
 {
     private readonly IConfiguration _configuration;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogger<ConsumerService> _logger;
+
     private readonly HttpClient _client;
     private IConnection? _connection;
     private IChannel? channel;
 
-    public ConsumerService(IConfiguration configuration, IServiceScopeFactory scopeFactory, HttpClient client)
+    public ConsumerService(IConfiguration configuration, IServiceScopeFactory scopeFactory, ILogger<ConsumerService> logger, HttpClient client)
     {
         _configuration = configuration;
         _scopeFactory = scopeFactory;
         _client = client;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -40,7 +43,6 @@ public class ConsumerService : BackgroundService
 
         try
         {
-            Console.WriteLine(" Entered.");
             _connection = await factory.CreateConnectionAsync(stoppingToken);
             channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
@@ -57,7 +59,8 @@ public class ConsumerService : BackgroundService
             await channel.ExchangeDeclareAsync("SubmissionProcessingExchange", ExchangeType.Direct);
             await channel.QueueDeclareAsync(queue: "submission-processing", durable: true, exclusive: false, autoDelete: false, arguments: queueArgs);
             await channel.QueueBindAsync("submission-processing", "SubmissionProcessingExchange", "SubmissionProcessingExchangeKey", null);
-            Console.WriteLine("Connection has been created");
+
+            _logger.LogInformation("Connection has been created");
 
             await channel.BasicQosAsync(
                 prefetchSize: 0,
@@ -81,7 +84,7 @@ public class ConsumerService : BackgroundService
                 {
                     throw new Exception("Received an empty or invalid message payload.");
                 }
-
+                _logger.LogInformation($"Correlation Id Received : {payload.CorrelationId}");
 
                 using (var scope = _scopeFactory.CreateScope())
                 {
@@ -134,22 +137,20 @@ public class ConsumerService : BackgroundService
                     {
                         if (job.Attempts >= 3)
                         {
+                            _logger.LogError("Failed to process file. All Attempts exhausted.");
                             job.Status = JobStatus.Failed;
                             await db.SaveChangesAsync(stoppingToken);
                             await channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: false);
                         }
                         else
                         {
-                            Console.Write("Entered here");
-                            Console.WriteLine(ex.Message);
+                            _logger.LogInformation("Failed to process file. Requeuing to Rabbit MQ");
                             await db.SaveChangesAsync(stoppingToken);
                             await channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: true);
                         }
                     }
                 }
                 ;
-
-
             };
 
             string consumerTag = await channel.BasicConsumeAsync("submission-processing", autoAck: false, consumer);
@@ -161,7 +162,7 @@ public class ConsumerService : BackgroundService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Could not connect to the rabbitmq: {ex.Message}");
+            _logger.LogError($"Could not connect to the rabbitmq: {ex.Message}");
         }
 
     }
@@ -172,9 +173,15 @@ public class ConsumerService : BackgroundService
         int fileId = payload.FileId;
         SubmissionFile submissionFile = await db.SubmissionFile.FirstOrDefaultAsync(t => t.Id == fileId);
 
+        var userId = await db.SubmissionFile
+        .Where(sf => sf.Id == fileId)
+        .Select(sf => sf.Submission.TaskAssignment.TraineeId)
+        .FirstOrDefaultAsync();
+
+
         if (submissionFile == null)
         {
-            Console.WriteLine("File does not there");
+            _logger.LogError("File does not exists");
             throw new Exception("File does not exists");
         }
         string configuredPath = _configuration["FileStorageService:Path"] ?? "uploads";
@@ -187,19 +194,17 @@ public class ConsumerService : BackgroundService
 
         if (calculatedCheckSum == submissionFile.CheckSum)
         {
-
-
-            Console.WriteLine("Processing inside message");
-            using HttpResponseMessage response = await _client.GetAsync("trainees", cancellationToken);
+            _logger.LogInformation("Checksum validated successfully");
+            using HttpResponseMessage response = await _client.GetAsync($"trainees/{userId}/{payload.CorrelationId}", cancellationToken);
             response.EnsureSuccessStatusCode();
             string responseBody = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(responseBody);
+            _logger.LogInformation("Resposne received from TraineeDirectory.Api Sucessfully", responseBody);
             return responseBody;
         }
         else
         {
-            Console.Write("Corrupted fileeee");
-            throw new Exception("Corrupted File");
+            _logger.LogError("File has been corrupted");
+            throw new Exception("File has been corrupted");
         }
 
 

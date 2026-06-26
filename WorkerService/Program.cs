@@ -58,20 +58,6 @@ builder.Services.AddHttpClient<ConsumerService>((serviceProvider, client) =>
 
     options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(10);
 });
-// .AddFallbackHandler( 
-//     // new HttpStatusCodeFallbackHandler()
-//     );
-
-
-
-// .AddPolicyHandler(GetRetryPolicy())
-// static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
-// {
-//     return HttpPolicyExtensions
-//         .HandleTransientHttpError()
-//         .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.NotFound)
-//         .WaitAndRetryAsync(6, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
-// }
 
 builder.Services.AddHostedService(sp => sp.GetRequiredService<ConsumerService>());
 

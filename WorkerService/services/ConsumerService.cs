@@ -177,11 +177,9 @@ public class ConsumerService : BackgroundService
             Console.WriteLine("File does not there");
             throw new Exception("File does not exists");
         }
-        string? basePath = _configuration["FileStorageService:Path"] ?? AppDomain.CurrentDomain.BaseDirectory;
-        string absoluteBasePath = Path.GetFullPath(basePath);
-        string folderPath = Path.Combine(absoluteBasePath, "uploads");
-
-        basePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../TraineeManagement.Api/uploads", submissionFile.StorageName));
+        string configuredPath = _configuration["FileStorageService:Path"] ?? "uploads";
+        string finalPath = Path.Combine(AppContext.BaseDirectory, configuredPath, submissionFile.StorageName);
+        string basePath = Path.GetFullPath(finalPath);
         await using var fileStream = new FileStream(basePath, FileMode.Open, FileAccess.Read);
         using var sha256 = SHA256.Create();
         byte[] hashBytes = await sha256.ComputeHashAsync(fileStream);

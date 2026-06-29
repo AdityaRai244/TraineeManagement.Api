@@ -116,7 +116,7 @@ builder.Services.AddHealthChecks()
         tags: new[] { "mq", "rabbit" }
     )
     .AddUrlGroup(
-        uri: new Uri("http://localhost:5287/api/health"),
+        uri: new Uri("http://traineedirectory-container:8080/api/health"),
         name : "TraineeDirectory.Api",
         failureStatus : HealthStatus.Unhealthy,
         timeout : TimeSpan.FromSeconds(10)

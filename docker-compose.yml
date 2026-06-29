@@ -1,0 +1,130 @@
+services:
+  redis:
+    image: docker-registry-002.zeuslearning.com/zeuslearning/redis
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+
+  mysql:
+    image: docker-registry-002.zeuslearning.com/zeuslearning/mysql
+    container_name: mysql
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: Root@123
+      MYSQL_DATABASE: trainee_management_db
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - app-network
+
+  rabbitmq:
+    image: docker-registry-002.zeuslearning.com/zeuslearning/rabbitmq:3.13.7-management
+    container_name: rabbitmq
+    hostname: rabbitmq-server
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  traineemanagement-api:
+    build:
+      context: .
+      dockerfile: TraineeManagement.Api/DockerFile
+      args:
+        DOMAIN_OWNER: ${DOMAIN_OWNER}
+        NUGET_REPO_NAME: ${NUGET_REPO_NAME}
+        CODEARTIFACT_AUTH_TOKEN: ${CODEARTIFACT_AUTH_TOKEN}
+        REGION: ${REGION}
+    container_name : traineemanagement-container
+    image: traineemanagement-api:latest
+    ports:
+      - "5001:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=mysql;Port=3306;Database=trainee_management_db;Uid=root;Pwd=Root@123;
+      - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__HttpClientAPI=http://traineedirectory-api:8080/api/
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
+    depends_on:
+      - mysql
+      - redis
+      - rabbitmq
+    networks:
+      - app-network
+    volumes:
+      - shared-uploads:/App/uploads
+
+  traineedirectory-api:
+    build:
+      context: .
+      dockerfile: TraineeDirectory.Api/DockerFile
+      args:
+        DOMAIN_OWNER: ${DOMAIN_OWNER}
+        NUGET_REPO_NAME: ${NUGET_REPO_NAME}
+        CODEARTIFACT_AUTH_TOKEN: ${CODEARTIFACT_AUTH_TOKEN}
+        REGION: ${REGION}
+    container_name : traineedirectory-container
+    image: traineedirectory-api:latest
+    ports:
+      - "5002:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - app-network
+
+  workerservice:
+    build:
+      context: .
+      dockerfile: WorkerService/DockerFile
+      args:
+        DOMAIN_OWNER: ${DOMAIN_OWNER}
+        NUGET_REPO_NAME: ${NUGET_REPO_NAME}
+        CODEARTIFACT_AUTH_TOKEN: ${CODEARTIFACT_AUTH_TOKEN}
+        REGION: ${REGION}
+    container_name : workerservice-container
+    image: workerservice:latest
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=server=mysql;port=3306;database=trainee_management_db;user=root;password=Root@123;
+      - ConnectionStrings__HttpClientAPI=http://traineedirectory-api:8080/api/health
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
+      - RabbitMQ__VirtualHost=/
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mysql:
+        condition: service_started
+    networks:
+      - app-network
+    volumes:
+      - shared-uploads:/App/uploads
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  mysql-data:
+  rabbitmq_data:
+  shared-uploads:

@@ -81,9 +81,14 @@ class LocalFileStorageService : IFileStorageService
         }
 
 
-        string? basePath = _config["FileStorageService:Path"] ?? AppDomain.CurrentDomain.BaseDirectory; ;
-        string absoluteBasePath = Path.GetFullPath(basePath);
-        string folderPath = Path.Combine(absoluteBasePath, "uploads");
+        // string basePath = _config["FileStorageService:Path"];
+        // string absoluteBasePath = string.IsNullOrEmpty(basePath)
+        //     ? AppDomain.CurrentDomain.BaseDirectory
+        //     : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, basePath);
+
+        // string folderPath = Path.Combine(absoluteBasePath, "uploads");
+        string folderPath = "/App/uploads"; 
+
         if (!Directory.Exists(folderPath))
         {
             Directory.CreateDirectory(folderPath);
@@ -93,6 +98,8 @@ class LocalFileStorageService : IFileStorageService
         string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file.FileName);
         string fileName = $"{fileNameWithoutExtension}_{Guid.NewGuid()}{extension}";
         string filePath = Path.Combine(folderPath, fileName);
+
+        Console.WriteLine(filePath);
 
         await using var stream = new FileStream(filePath, FileMode.Create);
         await file.CopyToAsync(stream);
@@ -187,7 +194,7 @@ class LocalFileStorageService : IFileStorageService
             _logger.LogInformation("File deleted successfully");
             File.Delete(filePath);
         }
-        
+
         return Task.CompletedTask;
 
 

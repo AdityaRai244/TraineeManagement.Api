@@ -41,6 +41,23 @@ public class ConsumerService : BackgroundService
             Password = _configuration["RabbitMQ:Password"],
         };
 
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                _logger.LogInformation("Attempting to connect to RabbitMQ...");
+                _connection = await factory.CreateConnectionAsync(stoppingToken);
+                channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
+                _logger.LogInformation("Successfully connected to RabbitMQ!");
+                break; // Connection successful! Exit the retry loop.
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"RabbitMQ not ready yet. Retrying in 5 seconds... Error: {ex.Message}");
+                await Task.Delay(5000, stoppingToken);
+            }
+        }
+
         try
         {
             _connection = await factory.CreateConnectionAsync(stoppingToken);
@@ -145,6 +162,9 @@ public class ConsumerService : BackgroundService
                         else
                         {
                             _logger.LogInformation("Failed to process file. Requeuing to Rabbit MQ");
+                            _logger.LogInformation("Before");
+                            _logger.LogInformation($"This is the {ex.Message}");
+                            _logger.LogInformation("After");
                             await db.SaveChangesAsync(stoppingToken);
                             await channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: true);
                         }
@@ -184,9 +204,11 @@ public class ConsumerService : BackgroundService
             _logger.LogError("File does not exists");
             throw new Exception("File does not exists");
         }
-        string configuredPath = _configuration["FileStorageService:Path"] ?? "uploads";
-        string finalPath = Path.Combine(AppContext.BaseDirectory, configuredPath, submissionFile.StorageName);
-        string basePath = Path.GetFullPath(finalPath);
+
+        // string configuredPath = _configuration["FileStorageService:Path"] ?? "./";
+        // string absoluteBasePath = Path.Combine(AppContext.BaseDirectory, configuredPath, "uploads");
+        // string basePath = Path.Combine(absoluteBasePath, submissionFile.StorageName);
+        string basePath = Path.Combine("/App/uploads", submissionFile.StorageName);
         await using var fileStream = new FileStream(basePath, FileMode.Open, FileAccess.Read);
         using var sha256 = SHA256.Create();
         byte[] hashBytes = await sha256.ComputeHashAsync(fileStream);

@@ -12,11 +12,11 @@ using WorkerService.TryName;
 
 
 var builder = Host.CreateApplicationBuilder(args);
-
+var serverVersion = new MySqlServerVersion(new Version(9,7,0));
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+    options.UseMySql(connectionString, serverVersion);
 });
 
 builder.Services.AddSingleton<ConsumerService>();

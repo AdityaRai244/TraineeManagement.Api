@@ -73,7 +73,7 @@ builder.Services.AddScoped(typeof(IRedisService<>), typeof(RedisService<>));
 builder.Services.AddSingleton<ISubmissionProcessingService, SubmissionProcessingService>();
 
 
-
+var serverVersion = new MySqlServerVersion(new Version(9,7,0));
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
 {

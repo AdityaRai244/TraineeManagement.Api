@@ -35,5 +35,11 @@ RUN dotnet publish -c Release -o out --no-restore
 FROM docker-registry-002.zeuslearning.com/zeuslearning/dotnet/aspnet:10.0-alpine as runtime
 WORKDIR /App
 COPY --from=build-env /AppCode/TraineeManagement.Api/out .
+
+# fallback setup
+COPY ./TraineeManagement.Api/appsettings.example.json ./
+RUN cp appsettings.example.json appsettings.json
+
+
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "TraineeManagement.Api.dll"]

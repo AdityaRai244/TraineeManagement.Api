@@ -3,7 +3,7 @@ using httpClient.services;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
-[Route("/api")]
+[Route("api")]
 public class TraineeController : ControllerBase
 {
 

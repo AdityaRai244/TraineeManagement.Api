@@ -55,12 +55,6 @@ services:
       - "5001:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__Redis=redis:6379
-      - ConnectionStrings__HttpClientAPI=http://traineedirectory-api:8080/api/
-      - RabbitMQ__Host=rabbitmq
-      - RabbitMQ__Port=5672
-      - RabbitMQ__Username=guest
-      - RabbitMQ__Password=guest
     depends_on:
       - mysql
       - redis
@@ -69,6 +63,7 @@ services:
       - app-network
     volumes:
       - shared-uploads:/App/uploads
+      - ./TraineeManagement.Api/appsettings.json:/App/appsettings.json
 
   traineedirectory-api:
     build:
@@ -100,13 +95,7 @@ services:
     container_name : workerservice-container
     image: workerservice:latest
     environment:
-      - DOTNET_ENVIRONMENT=Development
-      - ConnectionStrings__HttpClientAPI=http://traineedirectory-api:8080/api/health
-      - RabbitMQ__Host=rabbitmq
-      - RabbitMQ__Port=5672
-      - RabbitMQ__Username=guest
-      - RabbitMQ__Password=guest
-      - RabbitMQ__VirtualHost=/
+      - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -116,6 +105,7 @@ services:
       - app-network
     volumes:
       - shared-uploads:/App/uploads
+      - ./WorkerService/appsettings.json:/App/appsettings.json
 
 networks:
   app-network:

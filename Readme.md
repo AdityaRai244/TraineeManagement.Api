@@ -1,260 +1,125 @@
 ## Project Name
-Trainee Management API
+Trainee Management System
  
 ## Technology Used
-Asp.net core
+Asp.net core, MYSql, Redis, Rabbit MQ, Docker
 
 
 ## Prerequisites
 Create an appsettings.json file in root of your directory. Copy the appsettings.example.json file into the newly created appsettings.json file. Replace the variable values with the actual values. For eg : {SERVER_NAME} --> localhost, {MYSQL_USERNAME} --> root. etc.
 
-## DB SETUP
+## Architecture Diagram
+https://excalidraw.com/#json=GflAl0bg16s2iFODF-IHI,hzK1eUHDBagw8CkYnqr_WA
 
- 
-## How to Run
-run `dotnet run` in the root of the project directory
 
-# Login Credentials for testing
-Username : admin
-Password : admin
 
-# MySQL Setup Commands (WSL/Ubuntu)
- 
-## 1. Update Ubuntu Packages
- 
-```bash
-sudo apt update
-````
- 
-***
- 
-## 2. Install MySQL Server
- 
-```bash
-sudo apt install mysql-server -y
+## Backend setup steps
+
+  ### TraineeManagement.Api
+  1. Navigate to the TraineeManagement.Api folder  
+    From the root of the project run:  
+      ```javascript
+        cd TraineeManagement.Api
+      ```
+
+  2. Set up appsettings.json files  
+    Create a new file called appsettings.json. Copy paste the content from appsettings.example.json to the newly created file and replace with your actual values. 
+
+  3. Restore dependencies  
+      ```javascript
+        dotnet restore
+      ``` 
+
+  4. Build the project   
+      ```javascript
+        dotnet build
+      ```
+
+  6. Run the application  
+      ```javascript
+        dotnet run
+      ```
+
+
+  ### WorkerService
+  1. Navigate to the WorkerService folder    
+    From the root of the project run:   
+      ```javascript 
+        cd WorkerService
+      ```
+
+  2. Set up appsettings.json files  
+    Create a new file called appsettings.json. Copy paste the content from appsettings.example.json to the newly created file and replace with your actual values. 
+  
+  3. Restore dependencies  
+      ```javascript 
+        dotnet restore
+      ```
+
+  4. Build the project   
+      ```javascript 
+        dotnet build
+      ```
+
+  5. Run the application  
+      ```javascript 
+        dotnet run
+      ```
+
+## MySQL setup steps
+1. Get a database connection string
+
+2. Add Database connection string in the appsettings.json file of TraineeManagement.Api and WorkerService 
+
+3. Run the following command in the root of the project dir to make sure there are no errors.  
+  ```javascript 
+    dotnet build 
+  ```
+
+4. Run the following command in the root of the project dir to create tables in the database   
+  ```javascript 
+    dotnet ef database update -p Shared -s TraineeManagement.Api
+  ```
+
+Once ran successfully, the API and the database are in sync. We can test the connection by using swagger UI, try adding one entry  using POST end point and see if it is shown in the datase or not.
+
+## Redis setup steps
+1. Get a redis connection string and ensure your redis instance is up and running
+
+2. Add Redis connection string in the appsettings.json file of TraineeManagement.Api and WorkerService
+
+
+
+## RabbitMQ setup steps
+1. Ensure a rabbitMQ instance is up and running
+
+2. Add RabbitMQ username in the appsettings.json file of TraineeManagement.Api and WorkerServices 
+
+3. Add RabbitMQ password in the appsettings.json file of TraineeManagement.Api and WorkerServices 
+
+
+## Login credentials for testing
+``` javascript
+{
+  "username": "string",
+  "password": "string"
+}
 ```
- 
-***
- 
-## 3. Start MySQL Service
- 
-```bash
-sudo service mysql start
-```
- 
-***
- 
-## 4. Check MySQL Status
- 
-```bash
-sudo service mysql status
-```
- 
-Expected:
- 
-```text
-active (running)
-```
- 
-***
- 
-## 5. Open MySQL as sudo User
- 
-```bash
-sudo mysql
-```
- 
-***
- 
-## 6. Change Root Authentication to Password-Based Login
- 
-```sql
-ALTER USER 'root'@'localhost'
-IDENTIFIED WITH mysql_native_password
-BY 'Root@123';
-```
- 
-***
- 
-## 7. Apply Changes
- 
-```sql
-FLUSH PRIVILEGES;
-```
- 
-***
- 
-## 8. Verify Authentication Plugin
- 
-```sql
-SELECT user, host, plugin FROM mysql.user;
-```
- 
-Expected:
- 
-```text
-root | localhost | mysql_native_password
-```
- 
-***
- 
-## 9. Exit MySQL
- 
-```sql
-exit;
-```
- 
-***
- 
-## 10. Restart MySQL
- 
-```bash
-sudo service mysql restart
-```
- 
-***
- 
-## 11. Login Using Root Password
- 
-```bash
-mysql -u root -p
-```
- 
-Password:
- 
-```text
-Root@123
-```
- 
-***
- 
-## 12. Create Database
- 
-```sql
-CREATE DATABASE trainee_management_db;
-```
- 
-***
- 
-## 13. Verify Database
- 
-```sql
-SHOW DATABASES;
-```
- 
-Expected:
- 
-```text
-trainee_management_db
-```
- 
-***
- 
-## 14. Exit MySQL
- 
-```sql
-exit;
-```
- 
-***
- 
-# EF Core + MySQL Setup Commands
- 
-## 1. Remove Old InMemory Package
- 
-```bash
-dotnet remove package Microsoft.EntityFrameworkCore.InMemory
-```
- 
-***
- 
-## 2. Install EF Core MySQL Packages
- 
-```bash
-dotnet add package Microsoft.EntityFrameworkCore --version 9.0.0
-dotnet add package Microsoft.EntityFrameworkCore.Relational --version 9.0.0
-dotnet add package Microsoft.EntityFrameworkCore.Design --version 9.0.0
-dotnet add package Microsoft.EntityFrameworkCore.Tools --version 9.0.0
-dotnet add package Pomelo.EntityFrameworkCore.MySql --version 9.0.0
-```
- 
-***
- 
-## 3. Restore Packages
- 
-```bash
-dotnet restore
-```
- 
-***
- 
-## 4. Install dotnet ef Tool
- 
-```bash
-dotnet tool install --global dotnet-ef
-```
- 
-***
- 
-## 5. Add dotnet Tools Path
- 
-```bash
-export PATH="$PATH:$HOME/.dotnet/tools"
-```
- 
-***
- 
-## 6. Create Migration
- 
-```bash
-dotnet ef migrations add InitialCreate
-```
- 
-***
- 
-## 7. Apply Migration
- 
-```bash
-dotnet ef database update
-```
- 
-***
- 
-## 8. Run Application
- 
-```bash
-dotnet run
-```
- 
-***
- 
-# Verify Tables in MySQL
- 
-Login:
- 
-```bash
-mysql -u root -p
-```
- 
-Select database:
- 
-```sql
-USE trainee_management_db;
-```
- 
-Show tables:
- 
-```sql
-SHOW TABLES;
-```
- 
-Expected:
- 
-```text
-Trainees
-__EFMigrationsHistory
-```
- 
+
+## JWT usage instructions
+1. Generate and use a random string as your Jwt SecretKey
+
+2. Add Jwt SecretKey to appsettings.json file in the TraineeManagement.Api folder  
+
+
+## Setup using Docker
+1. Ensure the appsettings.json files in TraineeManagement.Api and WorkerService are appropriately filled
+
+2. Run the following command in the root of the project directory to start the application using docker:  
+  ``` javascript
+    docker compose up --build -d
+  ```
+
 # API List
 ```
 GET    /api/health 

@@ -60,8 +60,8 @@ public class ConsumerService : BackgroundService
 
         try
         {
-            _connection = await factory.CreateConnectionAsync(stoppingToken);
-            channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
+            // _connection = await factory.CreateConnectionAsync(stoppingToken);
+            // channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
             await channel.ExchangeDeclareAsync("SubmissionFailedExchange", ExchangeType.Direct);
             await channel.QueueDeclareAsync(queue: "submission-failed", durable: true, exclusive: false, autoDelete: false, arguments: null);
@@ -124,20 +124,6 @@ public class ConsumerService : BackgroundService
 
                         var SubmissionFile = await db.SubmissionFile
          .FirstOrDefaultAsync(f => f.Id == payload.FileId);
-
-                        //     var isDuplicate = await db.SubmissionFile
-                        //   .AnyAsync(f => f.CheckSum == SubmissionFile.CheckSum && f.Id != SubmissionFile.Id);
-
-
-                        //     if (isDuplicate)
-                        //     {
-                        //         Console.WriteLine($"Skipping processing. File with checksum {SubmissionFile.CheckSum} already processed.");
-
-                        //         job.Status = JobStatus.Completed;
-                        //         await db.SaveChangesAsync();
-                        //         await channel.BasicAckAsync(ea.DeliveryTag, false);
-                        //         return;
-                        //     }
 
                         job.Attempts += 1;
                         job.Status = JobStatus.Processing;

@@ -100,7 +100,7 @@ services:
       rabbitmq:
         condition: service_healthy
       mysql:
-        condition: service_started
+        condition: service_healthy
     networks:
       - app-network
     volumes:

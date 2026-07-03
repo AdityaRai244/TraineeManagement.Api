@@ -148,10 +148,14 @@ public class ConsumerService : BackgroundService
                         else
                         {
                             _logger.LogInformation("Failed to process file. Requeuing to Rabbit MQ");
-                            _logger.LogInformation("Before");
-                            _logger.LogInformation($"This is the {ex.Message}");
-                            _logger.LogInformation("After");
+                            _logger.LogInformation(ex.Message);
                             await db.SaveChangesAsync(stoppingToken);
+
+                            var delay = TimeSpan.FromSeconds(
+                                        Math.Pow(2, job.Attempts));
+
+                            await Task.Delay(delay, stoppingToken);
+
                             await channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: true);
                         }
                     }
@@ -191,10 +195,7 @@ public class ConsumerService : BackgroundService
             throw new Exception("File does not exists");
         }
 
-        // string configuredPath = _configuration["FileStorageService:Path"] ?? "./";
-        // string absoluteBasePath = Path.Combine(AppContext.BaseDirectory, configuredPath, "uploads");
-        // string basePath = Path.Combine(absoluteBasePath, submissionFile.StorageName);
-        string basePath = Path.Combine("/App/uploads", submissionFile.StorageName);
+        string basePath = Path.Combine(_configuration["FileStorageService:UploadPath"], submissionFile.StorageName);
         await using var fileStream = new FileStream(basePath, FileMode.Open, FileAccess.Read);
         using var sha256 = SHA256.Create();
         byte[] hashBytes = await sha256.ComputeHashAsync(fileStream);

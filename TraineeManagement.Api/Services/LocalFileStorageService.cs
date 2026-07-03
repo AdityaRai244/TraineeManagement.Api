@@ -80,14 +80,7 @@ class LocalFileStorageService : IFileStorageService
             throw new BadRequestException("Uploaded file is too big.");
         }
 
-
-        // string basePath = _config["FileStorageService:Path"];
-        // string absoluteBasePath = string.IsNullOrEmpty(basePath)
-        //     ? AppDomain.CurrentDomain.BaseDirectory
-        //     : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, basePath);
-
-        // string folderPath = Path.Combine(absoluteBasePath, "uploads");
-        string folderPath = "/App/uploads"; 
+        string folderPath = _config["FileStorageService:Path"]!; 
 
         if (!Directory.Exists(folderPath))
         {
@@ -96,8 +89,8 @@ class LocalFileStorageService : IFileStorageService
 
         string ContentType = file.ContentType;
         string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file.FileName);
-        string fileName = $"{fileNameWithoutExtension}_{Guid.NewGuid()}{extension}";
-        string filePath = Path.Combine(folderPath, fileName);
+        string storageName = $"{Guid.NewGuid()}{extension}";
+        string filePath = Path.Combine(folderPath, storageName);
 
         Console.WriteLine(filePath);
 
@@ -118,7 +111,7 @@ class LocalFileStorageService : IFileStorageService
             {
                 SubmissionId = submissionId,
                 OriginalFileName = file.FileName,
-                StorageName = fileName,
+                StorageName = storageName,
                 ContentType = ContentType,
                 Size = file.Length,
                 CheckSum = calculatedCheckSum,
@@ -153,7 +146,7 @@ class LocalFileStorageService : IFileStorageService
 
             await _submissionProcessingService.PostSubmissionProcessingAsync(data);
 
-            return $"/uploads/{fileName}";
+            return $"/uploads/{storageName}";
         }
         else
         {
@@ -168,7 +161,7 @@ class LocalFileStorageService : IFileStorageService
     public Task<bool> ExistsAsync(string fileName)
     {
 
-        string? basePath = _config["FileStorageService:Path"] ?? AppDomain.CurrentDomain.BaseDirectory; ;
+        string? basePath = _config["FileStorageService:UploadPath"] ?? AppDomain.CurrentDomain.BaseDirectory; ;
         string absoluteBasePath = Path.GetFullPath(basePath);
 
         string folderPath = Path.Combine(absoluteBasePath, "uploads");

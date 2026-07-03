@@ -17,8 +17,8 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 using TraineeManagement.Api.Exceptions;
-using RabbitMQ.Client;                              
-using System;    
+using RabbitMQ.Client;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,7 +73,7 @@ builder.Services.AddScoped(typeof(IRedisService<>), typeof(RedisService<>));
 builder.Services.AddSingleton<ISubmissionProcessingService, SubmissionProcessingService>();
 
 
-var serverVersion = new MySqlServerVersion(new Version(9,7,0));
+var serverVersion = new MySqlServerVersion(new Version(9, 7, 0));
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
@@ -92,7 +92,7 @@ builder.Services.AddHealthChecks()
         connectionString: builder.Configuration.GetConnectionString("DefaultConnection")!,
         name: "mysql-db",
         failureStatus: HealthStatus.Unhealthy,
-        tags: ["database", "mysql"])
+        tags: ["database", "mysql", "ready"])
     .AddRedis(
         redisConnectionString: builder.Configuration.GetConnectionString("Redis")!,
         name: "redis",
@@ -103,27 +103,29 @@ builder.Services.AddHealthChecks()
         {
             var factory = new ConnectionFactory
             {
-               HostName = rabbitSection["Host"],
+                HostName = rabbitSection["Host"],
                 Port = int.Parse(rabbitSection["Port"] ?? "5672"),
                 VirtualHost = rabbitSection["VirtualHost"] ?? "/",
-                UserName = rabbitSection["Username"], 
+                UserName = rabbitSection["Username"],
                 Password = rabbitSection["Password"],
             };
             return await factory.CreateConnectionAsync();
         },
         name: "rabbitmq",
         failureStatus: HealthStatus.Unhealthy,
-        tags: new[] { "mq", "rabbit" }
+        tags: new[] { "mq", "rabbit", "ready" }
     )
     .AddUrlGroup(
         uri: new Uri("http://traineedirectory-container:8080/api/health"),
-        name : "TraineeDirectory.Api",
-        failureStatus : HealthStatus.Unhealthy,
-        timeout : TimeSpan.FromSeconds(10)
+        name: "TraineeDirectory.Api",
+        failureStatus: HealthStatus.Unhealthy,
+        timeout: TimeSpan.FromSeconds(10),
+         tags: ["api", "ready"]
     );
 
 
-
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "live" });
 
 
 
@@ -211,14 +213,32 @@ if (app.Environment.IsDevelopment())
 }
 
 
-
-// Readiness — checks everything needed to serve requests
-app.MapHealthChecks("/health/ready", new HealthCheckOptions
+async Task WriteJsonResponse(HttpContext context, HealthReport report)
 {
-    Predicate = _ => true,
+    context.Response.ContentType = "application/json";
+
+    var result = new
+    {
+        status = report.Status.ToString(),
+        checks = report.Entries.Select(e => new
+        {
+            name = e.Key,
+            status = e.Value.Status.ToString(),
+            description = e.Value.Description
+        })
+    };
+
+    await context.Response.WriteAsJsonAsync(result);
+}
+
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("live"),
     ResponseWriter = async (context, report) =>
     {
         context.Response.ContentType = "application/json";
+
         var result = new
         {
             status = report.Status.ToString(),
@@ -231,8 +251,13 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
         };
 
         await context.Response.WriteAsJsonAsync(result);
-
     }
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = WriteJsonResponse
 });
 
 // -----------SEED USER ----------

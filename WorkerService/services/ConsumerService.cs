@@ -201,17 +201,30 @@ public class ConsumerService : BackgroundService
         byte[] hashBytes = await sha256.ComputeHashAsync(fileStream);
         string calculatedCheckSum = Convert.ToHexString(hashBytes);
 
-        if (calculatedCheckSum == submissionFile.CheckSum)
-        {
+
+        if (calculatedCheckSum == submissionFile.CheckSum){
             _logger.LogInformation("Checksum validated successfully");
-            using HttpResponseMessage response = await _client.GetAsync($"trainees/{userId}/{payload.CorrelationId}", cancellationToken);
-            response.EnsureSuccessStatusCode();
-            string responseBody = await response.Content.ReadAsStringAsync();
-            _logger.LogInformation("Resposne received from TraineeDirectory.Api Sucessfully", responseBody);
+        
+            using HttpResponseMessage response = await _client.GetAsync(
+                $"trainees/{userId}/{payload.CorrelationId}",
+                cancellationToken);
+        
+            if (!response.IsSuccessStatusCode){
+                _logger.LogError(
+                    "TraineeDirectory API returned status code {StatusCode}",
+                    response.StatusCode);
+        
+                throw new Exception(
+                    $"TraineeDirectory API request failed with status code {(int)response.StatusCode}");
+            }
+        
+            string responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+        
+            _logger.LogInformation(
+                "Response received from TraineeDirectory API successfully");
+        
             return responseBody;
-        }
-        else
-        {
+        }else{
             _logger.LogError("File has been corrupted");
             throw new Exception("File has been corrupted");
         }

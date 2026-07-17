@@ -116,7 +116,7 @@ builder.Services.AddHealthChecks()
         tags: new[] { "mq", "rabbit", "ready" }
     )
     .AddUrlGroup(
-        uri: new Uri("http://traineedirectory-container:8080/api/health"),
+        uri: new Uri($"{builder.Configuration["ConnectionStrings:HttpClientAPI"]}/health"),
         name: "TraineeDirectory.Api",
         failureStatus: HealthStatus.Unhealthy,
         timeout: TimeSpan.FromSeconds(10),
@@ -138,8 +138,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: MyAllowSpecificOrigins,
                       policy =>
                       {
-                          policy.WithOrigins("http://localhost:3000",
-                                              "http://localhost:5173")
+                          policy.WithOrigins(builder.Configuration["ConnectionStrings:AllowedCors"]!)
                                               .AllowAnyHeader()
                                               .AllowAnyMethod();
                       });
@@ -260,29 +259,6 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     ResponseWriter = WriteJsonResponse
 });
 
-// -----------SEED USER ----------
-
-// using(var scope = app.Services.CreateAsyncScope())
-// {
-//    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-//    if (!db.Users.Any())
-//    {
-//       var admin = new User
-//       {
-//          Username = "string",
-//          Email = "aditya@gmail.com",
-//          PasswordHash = "",
-//          Role = UserRole.Admin
-//       };
-//       var hasher = new PasswordHasher<User>();
-//       string hashedPassword = hasher.HashPassword(admin, "string");
-//       admin.PasswordHash = hashedPassword;
-//       Console.WriteLine("Seeding user: " + admin);
-//       db.Users.Add(admin);
-//       db.SaveChanges();
-//    }
-// }
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();

@@ -9,8 +9,7 @@ Asp.net core, MYSql, Redis, Rabbit MQ, Docker
 Create an appsettings.json file in root of your directory. Copy the appsettings.example.json file into the newly created appsettings.json file. Replace the variable values with the actual values. For eg : {SERVER_NAME} --> localhost, {MYSQL_USERNAME} --> root. etc.
 
 ## Architecture Diagram
-https://excalidraw.com/#json=ob-o7RDzcXhuGJsTxTUIC,n20uN-DKTqEyDoS1GLteNw
-
+https://excalidraw.com/#json=RVV4EBa628tZ6Dlc4ZQnv,1ObaeyDyHEZ4zsRwVY07ig
 
 
 ## Backend setup steps

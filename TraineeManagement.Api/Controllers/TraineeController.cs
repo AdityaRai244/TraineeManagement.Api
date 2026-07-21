@@ -33,13 +33,6 @@ public class TraineeController : ControllerBase
 
         var trainees = await _traineeService.GetAllTrainees(status,search,pageNumber,pageSize);
         _logger.LogInformation("Trainees fetched from service successfully");
-        // return Ok(new
-        // {
-        //     pageNumber = pageNumber,
-        //     pageSize = pageSize,
-        //     totalRecords = await ,
-        //     data = trainees;
-        // });
         return Ok(trainees);
     }
 

@@ -60,9 +60,7 @@ public class ConsumerService : BackgroundService
 
         try
         {
-            // _connection = await factory.CreateConnectionAsync(stoppingToken);
-            // channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
-
+          
             await channel.ExchangeDeclareAsync("SubmissionFailedExchange", ExchangeType.Direct);
             await channel.QueueDeclareAsync(queue: "submission-failed", durable: true, exclusive: false, autoDelete: false, arguments: null);
             await channel.QueueBindAsync("submission-failed", "SubmissionFailedExchange", "SubmissionFailedExchangeKey", null);
@@ -130,7 +128,6 @@ public class ConsumerService : BackgroundService
                         await db.SaveChangesAsync(stoppingToken);
 
                         await processMessageAsync(payload, db, stoppingToken);
-                        // throw new Exception();
 
                         job.Status = JobStatus.Completed;
                         await db.SaveChangesAsync(stoppingToken);

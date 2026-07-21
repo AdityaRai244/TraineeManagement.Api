@@ -1,11 +1,5 @@
 namespace TraineeManagement.SharedData.Models;
 
-// public enum SubmissionOptions
-// {
-//     Github,
-//     Drive,
-//     Link
-// }
 public enum SubmissionStatus
 {
     Submitted,

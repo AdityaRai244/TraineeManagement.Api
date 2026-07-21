@@ -57,23 +57,6 @@ public class MentorController : ControllerBase
     }
 
     
-    // [HttpGet("{id}/redis")]
-    // [Authorize]
-    // public async Task<ActionResult> GetRedisCheck(int id)
-    // {
-
-    //     var mentor = await redisService.GetAsync("asdfasdf");
-    //     // if(mentor == null)
-    //     // {
-    //     //     _logger.LogError("Mentor with Id {id} Not found",id);
-    //     //     return NotFound(new {message = $"Mentor with {id} not found"});
-    //     // }
-    //     // _logger.LogInformation("Mentor with Id {id} Fetched from service Successfully",id);
-    //     return Ok(mentor);
-
-    // }
-
-    
     [HttpPost]
     [Authorize]
     public async Task<ActionResult> Post([FromBody] CreateMentorDTO request)

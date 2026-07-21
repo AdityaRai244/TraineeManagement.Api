@@ -47,7 +47,6 @@ public class LearningTaskService : ILearningTaskService
         var mentors = await query.AsNoTracking().Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
         _logger.LogInformation("Implemented Pagination");
 
-        // var mentors = await query.ToListAsync();
         return mentors.Select(MapResponse);
 
     }

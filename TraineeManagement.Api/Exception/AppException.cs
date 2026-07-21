@@ -14,11 +14,7 @@ public abstract class AppException : Exception
 }
 public sealed class NotFoundException : AppException
 {
-    // public NotFoundException(string resourceName, object key)
-    //     : base($"{resourceName} with identifier '{key}' was not found.", HttpStatusCode.NotFound)
-    // {
-    // }
-     public NotFoundException(string resourceName)
+      public NotFoundException(string resourceName)
         : base($"{resourceName} does not exists.", HttpStatusCode.NotFound)
     {
     }

@@ -23,8 +23,6 @@ public sealed class GlobalExceptionHandler(
             Status = statusCode,
             Title = title,
             Type = GetProblemType(statusCode),
-            // Instance = httpContext.Request.Path,
-            // Detail = GetSafeErrorMessage(exception, httpContext)
         };
 
         problemDetails.Extensions["traceId"] = httpContext.TraceIdentifier;

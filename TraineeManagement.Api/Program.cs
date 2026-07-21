@@ -190,25 +190,6 @@ if (app.Environment.IsDevelopment())
         options.EnablePersistAuthorization();
     });
 
-    // app.UseExceptionHandler(options =>
-    // {
-    //     options.Run(async context =>
-    //     {
-    //         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-    //         context.Response.ContentType = "application/json";
-
-
-    //         var exceptionHandlerPathFeature =
-    //             context.Features.Get<IExceptionHandlerPathFeature>();
-
-    //         if(exceptionHandlerPathFeature is not null)
-    //         {
-    //             var error = new {message = "An unexpected error occured"};
-    //             await context.Response.WriteAsJsonAsync(error);
-    //         }
-    //     });
-    // });
-
 }
 
 

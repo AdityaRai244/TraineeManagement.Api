@@ -16,10 +16,6 @@ RUN cat > nuget.config <<EOF
 </configuration>
 EOF
 
-# EXPOSE 8080
-
-# FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-# WORKDIR /src
 
 COPY ./TraineeManagement.Api/ ./TraineeManagement.Api/
 COPY ./TraineeManagement.SharedData/ ./TraineeManagement.SharedData/

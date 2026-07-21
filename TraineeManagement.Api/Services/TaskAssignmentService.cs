@@ -36,7 +36,6 @@ public class TaskAssignmentService : ITaskAssignmentService
         var TaskAssignment = await query.AsNoTracking().Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
         _logger.LogInformation("Implemented Pagination");
 
-        // var mentors = await query.ToListAsync();
         return TaskAssignment.Select(MapResponse);
 
     }

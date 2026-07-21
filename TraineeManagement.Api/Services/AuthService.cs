@@ -78,7 +78,7 @@ public class AuthService : IAuthService
             issuer: _config["Jwt:Issuer"],
             audience: _config["Jwt:Audience"],
             claims: userClaims,
-            expires: DateTime.UtcNow.AddMinutes(480),
+            expires: _config["Jwt:ExpiryMinutes"],
             signingCredentials: credentials
         );
         _logger.LogInformation("JWT Generated Successfully");

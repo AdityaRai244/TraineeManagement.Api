@@ -19,7 +19,11 @@ class LocalFileStorageService : IFileStorageService
     private readonly ILogger<LocalFileStorageService> _logger;
     private readonly ISubmissionProcessingService _submissionProcessingService;
 
-
+    private static readonly Dictionary<string, string> SafeMimeTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { ".pdf", "application/pdf" },
+        { ".txt", "text/plain" },
+    };
 
 
     public LocalFileStorageService(IConfiguration config, AppDbContext database, IHttpContextAccessor httpContextAccessor, ILogger<LocalFileStorageService> logger, ISubmissionProcessingService submissionProcessingService)
@@ -32,25 +36,58 @@ class LocalFileStorageService : IFileStorageService
     }
 
 
-    public Boolean IsValidExtension(string extension)
+    private string GetStorageRootPath()
     {
-        List<string> allowedExtensions = _config.GetSection("FileStorageService:AllowedExtensions").Get<List<string>>() ?? new List<string>();
+        string basePath = _config["FileStorageService:Path"] ?? AppDomain.CurrentDomain.BaseDirectory;
+        string absolutePath = Path.GetFullPath(basePath);
 
-        if (allowedExtensions.Contains(extension))
+        if (!Directory.Exists(absolutePath))
         {
-            return true;
+            Directory.CreateDirectory(absolutePath);
         }
-        else
+
+        if (!absolutePath.EndsWith(Path.DirectorySeparatorChar.ToString()))
         {
-            return false;
+            absolutePath += Path.DirectorySeparatorChar;
         }
+
+        return absolutePath;
     }
 
+
+    private string GetSafeFilePath(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            throw new BadRequestException("Invalid file name.");
+        }
+
+        string rootPath = GetStorageRootPath();
+
+        // Combine and canonicalize the full path
+        string combinedPath = Path.Combine(rootPath, fileName);
+        string absoluteFilePath = Path.GetFullPath(combinedPath);
+
+        // Path Traversal Mitigation: Ensure target path remains inside the base upload directory
+        if (!absoluteFilePath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("Path traversal attempt detected with filename: {FileName}", fileName);
+            throw new BadRequestException("Invalid file path navigation.");
+        }
+
+        return absoluteFilePath;
+    }
+
+
+    public bool IsValidExtension(string extension)
+    {
+        var allowedExtensions = _config.GetSection("FileStorageService:AllowedExtensions").Get<List<string>>() ?? new List<string>();
+        return allowedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase);
+    }
 
 
     public async Task<string> SaveAsync(int submissionId, IFormFile file)
     {
-
         if (file == null || file.Length == 0)
         {
             _logger.LogError("No file uploaded");
@@ -65,8 +102,6 @@ class LocalFileStorageService : IFileStorageService
             throw new BadRequestException("Invalid Format");
         }
 
-
-
         string maxSize = _config["FileStorageService:MaxSize"] ?? "5000000";
 
         if (!long.TryParse(maxSize, out long maxSizeBytes))
@@ -80,39 +115,37 @@ class LocalFileStorageService : IFileStorageService
             throw new BadRequestException("Uploaded file is too big.");
         }
 
-        string folderPath = _config["FileStorageService:Path"]!; 
-
-        if (!Directory.Exists(folderPath))
+        if (!SafeMimeTypes.TryGetValue(extension, out string? safeContentType))
         {
-            Directory.CreateDirectory(folderPath);
+            safeContentType = "application/octet-stream";
         }
 
-        string ContentType = file.ContentType;
-        string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file.FileName);
         string storageName = $"{Guid.NewGuid()}{extension}";
-        string filePath = Path.Combine(folderPath, storageName);
+        string filePath = GetSafeFilePath(storageName);
 
-        Console.WriteLine(filePath);
+        await using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            await file.CopyToAsync(stream);
+        }
 
-        await using var stream = new FileStream(filePath, FileMode.Create);
-        await file.CopyToAsync(stream);
-
-        await using var checkSumStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-        using var sha256 = SHA256.Create();
-        byte[] hashBytes = await sha256.ComputeHashAsync(checkSumStream);
-        string calculatedCheckSum = Convert.ToHexString(hashBytes);
+        string calculatedCheckSum;
+        await using (var checkSumStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            using var sha256 = SHA256.Create();
+            byte[] hashBytes = await sha256.ComputeHashAsync(checkSumStream);
+            calculatedCheckSum = Convert.ToHexString(hashBytes);
+        }
 
         string? claimValue = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         if (int.TryParse(claimValue, out int userId))
         {
-
             var submissionFile = new SubmissionFile
             {
                 SubmissionId = submissionId,
                 OriginalFileName = file.FileName,
                 StorageName = storageName,
-                ContentType = ContentType,
+                ContentType = safeContentType,
                 Size = file.Length,
                 CheckSum = calculatedCheckSum,
                 UploadedBy = userId,
@@ -137,12 +170,11 @@ class LocalFileStorageService : IFileStorageService
                 CorrelationId = data.CorrelationId,
                 MessageId = data.MessageId,
                 Status = JobStatus.Queued,
-                StartedAt = DateTime.Now
+                StartedAt = DateTime.UtcNow
             };
 
             await _database.ProcessingJob.AddAsync(processingJobData);
             await _database.SaveChangesAsync();
-
 
             await _submissionProcessingService.PostSubmissionProcessingAsync(data);
 
@@ -153,64 +185,48 @@ class LocalFileStorageService : IFileStorageService
             _logger.LogError("User ID claim is missing or not a valid integer.");
             throw new UnauthorizedAccessException("Unauthorized user");
         }
-
-
-
     }
+
 
     public Task<bool> ExistsAsync(string fileName)
     {
-
-        string? basePath = _config["FileStorageService:UploadPath"] ?? AppDomain.CurrentDomain.BaseDirectory; ;
-        string absoluteBasePath = Path.GetFullPath(basePath);
-
-        string folderPath = Path.Combine(absoluteBasePath, "uploads");
-        var filePath = Path.Combine(folderPath, fileName);
-
-        return Task.FromResult(File.Exists(filePath));
-
-
+        try
+        {
+            string filePath = GetSafeFilePath(fileName);
+            return Task.FromResult(File.Exists(filePath));
+        }
+        catch (BadRequestException)
+        {
+            return Task.FromResult(false);
+        }
     }
 
     public Task DeleteAsync(string fileName)
     {
-
-        string? basePath = _config["FileStorageService:Path"] ?? AppDomain.CurrentDomain.BaseDirectory; ;
-        string absoluteBasePath = Path.GetFullPath(basePath);
-
-        string folderPath = Path.Combine(absoluteBasePath, "uploads");
-        var filePath = Path.Combine(folderPath, fileName);
-
+        string filePath = GetSafeFilePath(fileName);
 
         if (File.Exists(filePath))
         {
-            _logger.LogInformation("File deleted successfully");
             File.Delete(filePath);
+            _logger.LogInformation("File {FileName} deleted successfully", fileName);
         }
 
         return Task.CompletedTask;
-
-
     }
 
-    public async Task<Stream> OpenReadAsync(string fileName)
+
+    public Task<Stream> OpenReadAsync(string fileName)
     {
-
-        string? basePath = _config["FileStorageService:Path"] ?? AppDomain.CurrentDomain.BaseDirectory; ;
-        string absoluteBasePath = Path.GetFullPath(basePath);
-
-
-        string folderPath = Path.Combine(absoluteBasePath, "uploads");
-        var filePath = Path.Combine(folderPath, fileName);
+        string filePath = GetSafeFilePath(fileName);
 
         if (File.Exists(filePath))
         {
-            return new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
+            // Return stream options optimized for async reading
+            var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
+            return Task.FromResult<Stream>(stream);
         }
 
-        throw new BadRequestException("File does not exists");
-
-
+        throw new NotFoundException("File does not exist");
     }
 
 }

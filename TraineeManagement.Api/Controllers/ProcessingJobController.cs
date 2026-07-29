@@ -32,7 +32,8 @@ public class ProcessingJobController : ControllerBase
         var job = await _database.ProcessingJob.FirstOrDefaultAsync(t => t.Id == id);
         if(job == null)
         {
-        _logger.LogError("Job with Id {id} does not exists", id);
+            _logger.LogError("Job with Id {id} does not exists", id);
+            return NotFound();
         }
         _logger.LogInformation("Job with Id {id} Fetched from service Successfully", id);
         return Ok(job);

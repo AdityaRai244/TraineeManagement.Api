@@ -90,7 +90,7 @@ public class SubmissionController : ControllerBase
     [Route("submissions/{submissionId}/files")]
     public async Task<IActionResult> UploadFile(int submissionId, IFormFile file)
     {
-      
+
         var result = await _fileStorageService.SaveAsync(submissionId, file);
         Console.WriteLine(result);
         return Accepted(result);
@@ -102,16 +102,17 @@ public class SubmissionController : ControllerBase
     [Route("submission-files/{id}/download")]
     public async Task<IActionResult> DownloadFile(int id)
     {
-
         var metaData = await _database.SubmissionFile.FindAsync(id);
         if (metaData == null)
         {
             throw new NotFoundException("File does not exists");
         }
+
         var stream = await _fileStorageService.OpenReadAsync(metaData.StorageName);
+
+        Response.Headers.Append("X-Content-Type-Options", "nosniff");
+
         return File(stream, metaData.ContentType, metaData.OriginalFileName);
-
-
     }
 
     [HttpDelete]

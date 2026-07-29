@@ -122,7 +122,6 @@ public class TraineeService : ITraineeService
             throw new NotFoundException("Trainee");
         }
 
-        if (trainee == null) return null;
         trainee.FirstName = request.FirstName;
         trainee.LastName = request.LastName;
         trainee.Email = request.Email;

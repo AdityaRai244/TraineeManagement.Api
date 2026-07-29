@@ -39,14 +39,17 @@ public class ConsumerService : BackgroundService
             VirtualHost = _configuration["RabbitMQ:VirtualHost"],
             UserName = _configuration["RabbitMQ:Username"],
             Password = _configuration["RabbitMQ:Password"],
-        };
 
+        };
+        
+        
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
                 _logger.LogInformation("Attempting to connect to RabbitMQ...");
                 _connection = await factory.CreateConnectionAsync(stoppingToken);
+                _logger.LogInformation("Connection Created");
                 channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
                 _logger.LogInformation("Successfully connected to RabbitMQ!");
                 break; // Connection successful! Exit the retry loop.
@@ -60,7 +63,7 @@ public class ConsumerService : BackgroundService
 
         try
         {
-          
+
             await channel.ExchangeDeclareAsync("SubmissionFailedExchange", ExchangeType.Direct);
             await channel.QueueDeclareAsync(queue: "submission-failed", durable: true, exclusive: false, autoDelete: false, arguments: null);
             await channel.QueueBindAsync("submission-failed", "SubmissionFailedExchange", "SubmissionFailedExchangeKey", null);
@@ -199,29 +202,33 @@ public class ConsumerService : BackgroundService
         string calculatedCheckSum = Convert.ToHexString(hashBytes);
 
 
-        if (calculatedCheckSum == submissionFile.CheckSum){
+        if (calculatedCheckSum == submissionFile.CheckSum)
+        {
             _logger.LogInformation("Checksum validated successfully");
-        
+
             using HttpResponseMessage response = await _client.GetAsync(
                 $"trainees/{userId}/{payload.CorrelationId}",
                 cancellationToken);
-        
-            if (!response.IsSuccessStatusCode){
+
+            if (!response.IsSuccessStatusCode)
+            {
                 _logger.LogError(
                     "TraineeDirectory API returned status code {StatusCode}",
                     response.StatusCode);
-        
+
                 throw new Exception(
                     $"TraineeDirectory API request failed with status code {(int)response.StatusCode}");
             }
-        
+
             string responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-        
+
             _logger.LogInformation(
                 "Response received from TraineeDirectory API successfully");
-        
+
             return responseBody;
-        }else{
+        }
+        else
+        {
             _logger.LogError("File has been corrupted");
             throw new Exception("File has been corrupted");
         }

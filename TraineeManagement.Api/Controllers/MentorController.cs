@@ -7,6 +7,7 @@ using TraineeManagement.Api.Services;
 
 namespace TraineeManagement.Api.Controllers;
 
+[Authorize(Roles = "Admin")]
 [ApiController]
 [Route("/api/mentors")]
 
@@ -25,7 +26,6 @@ public class MentorController : ControllerBase
     }
 
      [HttpGet]
-    [Authorize]
     public async Task<ActionResult> Get( [FromQuery] MentorStatus? status, [FromQuery] string? search, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
 
@@ -41,7 +41,6 @@ public class MentorController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize]
     public async Task<ActionResult> GetById(int id)
     {
 
@@ -58,7 +57,6 @@ public class MentorController : ControllerBase
 
     
     [HttpPost]
-    [Authorize]
     public async Task<ActionResult> Post([FromBody] CreateMentorDTO request)
     {
 
@@ -69,7 +67,6 @@ public class MentorController : ControllerBase
     }
 
      [HttpPut("{id}")]
-    [Authorize]
     public async Task<ActionResult> Put(int id, [FromBody] UpdateMentorDTO request)
     {
         var mentor = await _mentorService.UpdateMentor(id, request);
@@ -84,7 +81,6 @@ public class MentorController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize]
     public async Task<ActionResult> Delete(int id)
     {
         var success = await _mentorService.DeleteMentor(id);

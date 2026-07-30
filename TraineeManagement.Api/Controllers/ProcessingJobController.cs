@@ -25,7 +25,7 @@ public class ProcessingJobController : ControllerBase
     }
 
     [HttpGet("/{id}")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> GetById(int id)
     {
 

@@ -7,6 +7,7 @@ using TraineeManagement.Api.Services;
 
 namespace TraineeManagement.Api.Controllers;
 
+[Authorize(Roles = "Trainee,Mentor")]
 [ApiController]
 [Route("/api/reviews")]
 
@@ -23,7 +24,6 @@ public class ReviewController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize]
     public async Task<ActionResult> Get([FromQuery] ReviewStatus? status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
 
@@ -39,7 +39,6 @@ public class ReviewController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize]
     public async Task<ActionResult> GetById(int id)
     {
 
@@ -56,7 +55,6 @@ public class ReviewController : ControllerBase
 
 
     [HttpPost]
-    [Authorize]
     public async Task<ActionResult> Post([FromBody] CreateReviewDTO request)
     {
 

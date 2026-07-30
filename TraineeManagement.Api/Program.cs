@@ -19,6 +19,8 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using TraineeManagement.Api.Exceptions;
 using RabbitMQ.Client;
 using System;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -164,11 +166,25 @@ builder.Services.AddAuthentication(options =>
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = builder.Configuration["Jwt:Issuer"],
                 ValidAudience = builder.Configuration["Jwt:Audience"],
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!)),
+                RoleClaimType = Claims.ClaimTypes.Role
             };
         });
 
 builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("LoginPolicy", opt =>
+    {
+        opt.PermitLimit = 5;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 0;
+    });
+
+    options.RejectionStatusCode = StatusCodes.Status422UnprocessableEntity;
+});
 
 builder.Services.AddStackExchangeRedisCache(options =>
 {

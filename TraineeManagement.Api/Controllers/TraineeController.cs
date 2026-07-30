@@ -6,6 +6,7 @@ using TraineeManagement.SharedData.Models;
 using TraineeManagement.Api.Services;
 namespace TraineeManagement.Api.Controllers;
 
+[Authorize(Roles = "Mentor")]
 [ApiController]
 [Route("/api/trainees")]
 public class TraineeController : ControllerBase
@@ -21,7 +22,6 @@ public class TraineeController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize]
     public async Task<ActionResult> Get( [FromQuery] UserStatus? status, [FromQuery] string? search, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
 
@@ -38,7 +38,6 @@ public class TraineeController : ControllerBase
 
 
     [HttpGet("{id}")]
-    [Authorize]
     public async Task<ActionResult> GetById(int id)
     {
 
@@ -55,7 +54,6 @@ public class TraineeController : ControllerBase
     
 
     [HttpPost]
-    [Authorize]
     public async Task<ActionResult> Post([FromBody] CreateTraineeRequestDTO request)
     {
 
@@ -66,7 +64,6 @@ public class TraineeController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize]
     public async Task<ActionResult> Put(int id, [FromBody] UpdateTraineeRequestDTO request)
     {
         var trainee = await _traineeService.UpdateTrainee(id, request);
@@ -81,7 +78,6 @@ public class TraineeController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize]
     public async Task<ActionResult> Delete(int id)
     {
         var success = await _traineeService.DeleteTrainee(id);

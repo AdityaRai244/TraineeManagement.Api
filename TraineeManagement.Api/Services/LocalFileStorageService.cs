@@ -1,18 +1,20 @@
-
 namespace TraineeManagement.Api.Services;
 
 using System.IO;
 using TraineeManagement.SharedData.Data;
 using TraineeManagement.Api.Exceptions;
 using TraineeManagement.SharedData.Models;
-
 using System.Security.Cryptography;
 using System.Security.Claims;
-using System.Diagnostics;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System;
+using System.Threading.Tasks;
 
 class LocalFileStorageService : IFileStorageService
 {
-
     private readonly IConfiguration _config;
     private readonly AppDbContext _database;
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -25,8 +27,12 @@ class LocalFileStorageService : IFileStorageService
         { ".txt", "text/plain" },
     };
 
-
-    public LocalFileStorageService(IConfiguration config, AppDbContext database, IHttpContextAccessor httpContextAccessor, ILogger<LocalFileStorageService> logger, ISubmissionProcessingService submissionProcessingService)
+    public LocalFileStorageService(
+        IConfiguration config,
+        AppDbContext database,
+        IHttpContextAccessor httpContextAccessor,
+        ILogger<LocalFileStorageService> logger,
+        ISubmissionProcessingService submissionProcessingService)
     {
         _database = database;
         _config = config;
@@ -34,7 +40,6 @@ class LocalFileStorageService : IFileStorageService
         _submissionProcessingService = submissionProcessingService;
         _logger = logger;
     }
-
 
     private string GetStorageRootPath()
     {
@@ -54,7 +59,6 @@ class LocalFileStorageService : IFileStorageService
         return absolutePath;
     }
 
-
     private string GetSafeFilePath(string fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName))
@@ -63,12 +67,9 @@ class LocalFileStorageService : IFileStorageService
         }
 
         string rootPath = GetStorageRootPath();
-
-        // Combine and canonicalize the full path
         string combinedPath = Path.Combine(rootPath, fileName);
         string absoluteFilePath = Path.GetFullPath(combinedPath);
 
-        // Path Traversal Mitigation: Ensure target path remains inside the base upload directory
         if (!absoluteFilePath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
         {
             _logger.LogWarning("Path traversal attempt detected with filename: {FileName}", fileName);
@@ -78,13 +79,11 @@ class LocalFileStorageService : IFileStorageService
         return absoluteFilePath;
     }
 
-
     public bool IsValidExtension(string extension)
     {
         var allowedExtensions = _config.GetSection("FileStorageService:AllowedExtensions").Get<List<string>>() ?? new List<string>();
         return allowedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase);
     }
-
 
     public async Task<string> SaveAsync(int submissionId, IFormFile file)
     {
@@ -187,7 +186,6 @@ class LocalFileStorageService : IFileStorageService
         }
     }
 
-
     public Task<bool> ExistsAsync(string fileName)
     {
         try
@@ -214,14 +212,12 @@ class LocalFileStorageService : IFileStorageService
         return Task.CompletedTask;
     }
 
-
     public Task<Stream> OpenReadAsync(string fileName)
     {
         string filePath = GetSafeFilePath(fileName);
 
         if (File.Exists(filePath))
         {
-            // Return stream options optimized for async reading
             var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
             return Task.FromResult<Stream>(stream);
         }
@@ -229,4 +225,17 @@ class LocalFileStorageService : IFileStorageService
         throw new NotFoundException("File does not exist");
     }
 
+    public async Task<SubmissionFile?> GetFileMetadataAsync(int id)
+    {
+        return await _database.SubmissionFile.FindAsync(id);
+    }
+
+    public async Task DeleteFileMetadataAsync(SubmissionFile metadata)
+    {
+        if (metadata == null) return;
+
+        _database.SubmissionFile.Remove(metadata);
+        await _database.SaveChangesAsync();
+        _logger.LogInformation("File record with metadata ID {Id} deleted from database context successfully", metadata.Id);
+    }
 }

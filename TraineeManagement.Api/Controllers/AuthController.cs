@@ -3,18 +3,20 @@ using TraineeManagement.Api.DTOs;
 using TraineeManagement.SharedData.Models;
 
 using TraineeManagement.Api.Services;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace TraineeManagement.Api.Controllers;
 
 [ApiController]
+[EnableRateLimiting("fixed")]
 [Route("/api/auth/login")]
-public class LoginController : ControllerBase
+public class AuthController : ControllerBase
 {
 
     private readonly IAuthService _authService;
     private readonly ILogger<TraineeController> _logger;
 
-    public LoginController(IAuthService authService, ILogger<TraineeController> logger)
+    public AuthController(IAuthService authService, ILogger<TraineeController> logger)
     {
         _authService = authService;
         _logger = logger;

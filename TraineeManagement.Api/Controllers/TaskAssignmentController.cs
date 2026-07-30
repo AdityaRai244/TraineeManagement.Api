@@ -7,6 +7,7 @@ using TraineeManagement.Api.Services;
 
 namespace TraineeManagement.Api.Controllers;
 
+[Authorize(Roles = "Trainee,Mentor,Admin")]
 [ApiController]
 [Route("/api/task-assignments")]
 
@@ -23,7 +24,6 @@ public class TaskAssignmentController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize]
     public async Task<ActionResult> Get([FromQuery] TaskAssignmentStatus? status, [FromQuery] string? search, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
 
@@ -39,7 +39,6 @@ public class TaskAssignmentController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize]
     public async Task<ActionResult> GetById(int id)
     {
 
@@ -56,7 +55,6 @@ public class TaskAssignmentController : ControllerBase
 
 
     [HttpPost]
-    [Authorize]
     public async Task<ActionResult> Post([FromBody] CreateTaskAssignmentDTO request)
     {
 
@@ -67,7 +65,6 @@ public class TaskAssignmentController : ControllerBase
     }
 
     [HttpPut("{id}/status")]
-    [Authorize]
     public async Task<ActionResult> Put(int id, [FromBody] UpdateTaskAssignmentDTO request)
     {
         var taskAssignment = await _taskAssignmentService.UpdateTaskAssignment(id, request);
